@@ -117,6 +117,7 @@ const DIALOGUES = {
     [['Groloup', "Coucou Didi! Devine qui vient de monter le rang 14... Moi!"]],
     [['Groloup', "Salut! J'ai pris le chemin le plus court... y en a juste un."]],
     [['Groloup', "Ton père est-tu là?"], ['Didi', "Non, il est au bois."], ['Groloup', "Ouf! Je voulais pas repartir avec du plomb dans les fesses."]],
+    [['Groloup', "Surprise, Didi!"], ['Didi', "Bon! Groloup qui vient encore er'tontir sans avertir!"]],
   ],
   mouffette: [
     [['Didi', "Hmm... t'as un nouveau parfum?"], ['Groloup', "Eau de mouffette. C'est la grosse mode."]],
@@ -135,6 +136,7 @@ const DIALOGUES = {
     [['Didi', "Ton bicycle a un nouveau moteur?"], ['Groloup', "Oui! Un moteur aux bleuets!"]],
     [['Didi', "T'avais le vent dans le dos {auj}!"], ['Groloup', "Un vent maison, fait avec des bleuets!"]],
     [['Didi', "Les vaches se demandent encore c'était quoi, ce bruit-là!"], ['Groloup', "Moi aussi... moi aussi."]],
+    [['Groloup', "C'est le vent qui m'a poussé jusqu'ici!"], ['Didi', "Essaie pas de m'accrères ça, toi!"]],
   ],
   // bobos: selon ce qui l'a fait tomber le plus souvent
   bobos: {
@@ -165,6 +167,7 @@ const DIALOGUES = {
       [['Groloup', "Ouf... le rang 14 m'a donné du fil à retordre!"], ['Didi', "Assieds-toi, je vais te chercher un verre d'eau."]],
       [['Groloup', "Fais pas attention à mes bobos..."], ['Didi', "Je vais quand même te mettre un pansement!"]],
       [['Didi', "Qu'est-ce qui t'est arrivé? T'es tout poqué!"], ['Groloup', "Le rang 14 pis moi, on s'est chicanés."]],
+      [['Groloup', "J'ai atterri dans le fossette, en bas de la côte."], ['Didi', "Pauvre toi! T'as du foin dans les cheveux!"]],
     ],
   },
   retard: [
@@ -175,6 +178,7 @@ const DIALOGUES = {
     [['Didi', "J'ai eu le temps de lire tout le journal!"], ['Groloup', "Pis? Y avait-tu des nouvelles du rang 14?"]],
     [['Didi', "J'ai eu le temps de tricoter une mitaine!"], ['Groloup', "La prochaine fois, j'arrive avant que tu finisses l'autre!"]],
     [['Didi', "Je commençais à m'inquiéter!"], ['Groloup', "Inquiète-toi pas, je finis toujours par arriver!"]],
+    [['Didi', "C'est asteur que t'arrives?"], ['Groloup', "Mieux vaut tard que jamais!"]],
     { l: [['Didi', "Le soleil a eu le temps de bouger!"], ['Groloup', "Moi aussi, j'ai bougé... tranquillement."]], jour: true },
     { l: [['Didi', "La lune a eu le temps de se lever!"], ['Groloup', "Je voulais arriver en même temps qu'elle!"]], soir: true },
   ],
@@ -204,6 +208,8 @@ const DIALOGUES = {
     [['Didi', "Elles sont belles! Elles sentent bon."], ['Groloup', "Presque autant que toi."]],
     [['Didi', "Je vais en faire sécher une dans mon livre."], ['Groloup', "Une page juste pour moi?"]],
     { l: [['Didi', "Encore des fleurs? Tu me gâtes!"], ['Groloup', "T'en mérites un champ au complet."]], si: 'encore' },
+    [['Groloup', "Des belles fleurs pour une belle créature!"], ['Didi', "Arrête, tu me fais rougir!"]],
+    { l: [['Didi', "Juste ça? C'pas yabe, ton bouquet..."], ['Groloup', "C'est pas la grosseur qui compte, c'est l'intention!"]], si: 'peu' },
     [['Didi', "Wow! Sont belles, ces fleurs-là!"], ['Groloup', "Oui, ce sont des jacinthes."], ['Didi', "Jacinthe? C'est un beau nom!"]],
   ],
   pasDeFleurs: [
@@ -213,6 +219,7 @@ const DIALOGUES = {
     [['Didi', "Pas de bouquet? Je vais m'en souvenir!"], ['Groloup', "La prochaine fois, je t'en apporte deux!"]],
     [['Groloup', "J'ai pas de fleurs... mais j'ai mon plus beau sourire!"], ['Didi', "Ton sourire va faire l'affaire."]],
     [['Didi', "Les marguerites étaient en congé?"], ['Groloup', "Elles ont pris leur journée!"]],
+    [['Didi', "T'as rien pour moi?"], ['Groloup', "Rdjien pantoute... Les fleurs dormaient encore!"]],
   ],
   // au revoir après l'intermède: Didi parle selon son humeur, Groloup lui répond
   depart: [
@@ -231,6 +238,7 @@ const DIALOGUES = {
       [['Didi', "J'aime ça quand tu passes."], ['Groloup', "Moi aussi! Je reviens bientôt!"]],
       [['Didi', "T'es pas comme les autres gars du rang."], ['Groloup', "Les autres ont pas un beau bicycle rouge!"]],
       [['Didi', "Reviens quand tu veux... ben, pas trop tard."], ['Groloup', "Promis! Avant que les poules se couchent."]],
+      [['Didi', "Des fois, je pense qu'il te manque des bardeaux, toi."], ['Groloup', "Peut-être, mais il me reste un gros coeur!"]],
     ],
     [
       [['Didi', "T'es pas mal fin, toi..."], ['Groloup', "Toi aussi, Didi. À bientôt!"]],
@@ -259,6 +267,7 @@ function echangeOk(x, ctx) {
   if (x.soir && !ctx.soir) return false;
   if (x.sauf && ctx.evenement === x.sauf) return false;
   if (x.si === 'encore' && !ctx.encore) return false;
+  if (x.si === 'peu' && !(ctx.fleurs > 0 && ctx.fleurs <= 4)) return false;
   if (x.min && (ctx.nb || 0) < x.min) return false;
   return true;
 }
@@ -290,6 +299,11 @@ const SKETCHS = [
   [['Groloup', "J'ai pratiqué mes pas de danse dans la grange."], ['Didi', "Pis?"], ['Groloup', "Les vaches ont applaudi!"]],
   [['Didi', "Ma galerie aurait besoin d'une couche de peinture..."], ['Groloup', "Je reviens samedi avec mon pinceau!"]],
   [['Groloup', "J'ai appris une nouvelle blague."], ['Didi', "Vas-y!"], ['Groloup', "...Flûte, je l'ai oubliée dans la côte."]],
+  { l: [['Didi', "Entre toi pis moi pis la boîte à bois..."], ['Groloup', "Oui?"], ['Didi', "...t'es pas mal fin, Groloup."]], min: 55 },
+  [['Didi', "Entre toi pis moi pis la boîte à bois..."], ['Groloup', "Oui?"], ['Didi', "...ton bicycle a besoin d'huile."]],
+  [['Didi', "Mon père m'a demandé de chauffer la truie."], ['Groloup', "Laisse faire, je m'en occupe! Je suis le roi du bois de chauffage."]],
+  [['Didi', "Ton bicycle, c'est pas vargeux."], ['Groloup', "Il est vieux, mais il monte le rang 14 pareil!"]],
+  [['Groloup', "En montant, j'ai vu un djèvre pis un djibou!"], ['Didi', "Pis moi, j'ai vu un Groloup."]],
 ];
 
 // Scénarios de visite (un par visite, sans répétition)
@@ -323,6 +337,9 @@ const EVENEMENTS = [
 
 // Remarques de Didi sur la journée (selon le scénario de la visite), avec la réponse de Groloup.
 // Plusieurs variantes par scénario: d'une partie à l'autre, on ne revoit pas toujours la même.
+// Faux départ: Groloup retourne vers la maison ou niaise devant au lieu de partir
+const BACUL = ["Faux départ! Chie pas sur le bacul, Groloup!", "Voyons, Groloup! On chie pas sur le bacul!",
+  "Didi t'attend! Chie pas sur le bacul!", "Envoye, Groloup! C'est pas le temps de chier sur le bacul!"];
 const REMARQUES = {
   vent: [
     ["T'as les cheveux tout mêlés!", "Le vent m'a coiffé à sa manière."],
@@ -338,6 +355,7 @@ const REMARQUES = {
     ["T'es trempé! Je vais te chercher une serviette.", "Merci! Mes bas font flouc flouc."],
     ["T'as pédalé sous la pluie pour moi?", "Une petite averse, ça m'arrête pas!"],
     ["Enlève tes souliers avant d'entrer!", "Mes souliers sont rendus des chaloupes!"],
+    ["T'aurais dû mettre tes bottes à tuyau!", "Je les gardais propres pour venir te voir!"],
   ],
   bleuets: [
     ["Pas trop d'ours sur la route?", st => st.causes.ours ? "Un ou deux... ils voulaient mes bleuets!" : "Pas un! Ils étaient trop occupés à manger."],
@@ -1467,8 +1485,8 @@ function addAmour(d, x, y, label) {
   if (label) pop(label, x, y, d < 0 ? '#ff6a7a' : '#ffb0c8');
   if (d <= -1) Sound.fx('baisse');
 }
-function pop(txt, x, y, col, size) {
-  G.pops.push({ txt, x: x == null ? P.x : x, y: y == null ? P.y - 34 : y, t: 0, col: col || '#ffffff', size: size || 6 });
+function pop(txt, x, y, col, size, dur) {
+  G.pops.push({ txt, x: x == null ? P.x : x, y: y == null ? P.y - 34 : y, t: 0, col: col || '#ffffff', size: size || 6, dur: dur || 1.4 });
 }
 function part(kind, x, y, vx, vy, life, col) { G.parts.push({ kind, x, y, vx, vy, life, max: life, col }); }
 function burst(x, y, n, col, spd, kind) {
@@ -1883,8 +1901,8 @@ function updateParticles(dt) {
     if (p.kind === 'confetti') p.vx = Math.sin(p.life * 4 + p.y * .1) * 14;
   }
   G.parts = G.parts.filter(p => p.life > 0);
-  for (const q of G.pops) { q.t += dt; q.y -= 14 * dt; }
-  G.pops = G.pops.filter(q => q.t < 1.4);
+  for (const q of G.pops) { q.t += dt; q.y -= (q.dur > 1.4 ? 7 : 14) * dt; }
+  G.pops = G.pops.filter(q => q.t < (q.dur || 1.4));
   if (G.parts.length > 400) G.parts.splice(0, G.parts.length - 400);
 }
 
@@ -2450,6 +2468,7 @@ function startVisit() {
   G.event = G.visite === 1 ? piocher('evenements', EVENEMENTS, e => e.id === 'calme') : piocher('evenements', EVENEMENTS, e => !e.saisons || e.saisons.includes(G.saison));
   G.up = buildUp(G.visite, G.seed, G.event);
   setLevel(G.up);
+  G.fauxDepart = false; G.banniere = null;
   G.stats = { fleurs: 0, plantes: 0, nids: 0, coeurs: 0, t: 0, mouffette: false, delta: 0, amourDebut: G.amour, pets: 0, causes: {} };
   G.parts = []; G.pops = []; G.arr = null;
   resetPlayer(G.lev.homeX + 40); P.pose = null; P.hidden = false;
@@ -2482,7 +2501,7 @@ function startArrival() {
   const L = A.lines;
   addAmour(1);
   G.vus = G.vus || {};
-  const ctx = { soir: G.saison === 'nuit', evenement: G.event ? G.event.id : null, encore: G.totalFleurs > 0, nb: 0 };
+  const ctx = { soir: G.saison === 'nuit', evenement: G.event ? G.event.id : null, encore: G.totalFleurs > 0, nb: 0, fleurs: st.fleurs };
   const auj = ctx.soir ? 'à soir' : "aujourd'hui";
   const ajouter = ex => { if (ex) for (const l of lignesDe(ex)) L.push([l[0], l[1].replace('{auj}', auj)]); };
   const tirer = (nom, pool, extra) => piocher(nom, pool, x => echangeOk(x, Object.assign({}, ctx, extra || {})));
@@ -3060,6 +3079,7 @@ const INTERMEDES = {
     [['Didi', "Goûte à mon sucre à la crème."], ['Groloup', "Mmm! Je vais monter la côte deux fois plus vite!"]],
     [['Didi', "Tarte aux bleuets, toute chaude!"], ['Groloup', "Mmm... j'ai la langue toute bleue!"], ['Didi', "Ça te fait bien!"]],
     [['Didi', "J'ai essayé une recette de carrés aux dattes."], ['Groloup', "Les meilleurs du rang 14! Pis du rang 13 aussi!"]],
+    [['Groloup', "Je prendrais une troisième pointe de tarte..."], ['Didi', "T'es pas achallé, toi!"], ['Groloup', "C'est ta faute, elle est trop bonne!"]],
   ] },
   exploit: { titre: 'Les exploits de Groloup', scenes: [
     [['Groloup', "Cette semaine, j'ai réparé le tracteur avec de la broche."], ['Didi', "Pis il marche?"], ['Groloup', "Il marche! ...Juste à reculons."]],
@@ -3069,6 +3089,8 @@ const INTERMEDES = {
     [['Groloup', "J'ai réparé la vieille horloge de la cuisine."], ['Didi', "Elle marche?"], ['Groloup', "Oui! Pis astheure, elle sonne midi deux fois."]],
     [['Groloup', "J'ai construit une chaise berçante."], ['Didi', "Elle berce bien?"], ['Groloup', "Elle berce même quand y a personne dessus!"]],
     [['Groloup', "J'ai posé un moulin à vent sur la grange."], ['Didi', "Pour quoi faire?"], ['Groloup', "Pour sécher mes bas plus vite!"]],
+    [['Groloup', "J'ai rapaillé la clôture de ton père avec de la broche."], ['Didi', "Pis elle tient?"], ['Groloup', "Tant que les vaches s'appuient pas dessus!"]],
+    [['Groloup', "J'ai soulevé le derrière du tracteur à bout de bras!"], ['Didi', "Tu vas pas m'accrères ça!"], ['Groloup', "Bon... avec un cric. Mais j'ai forcé pareil!"]],
     [['Groloup', "J'ai refait le toit du poulailler."], ['Didi', "Les poules sont contentes?"], ['Groloup', "Elles m'ont pondu une douzaine d'oeufs pour me remercier!"]],
     [['Groloup', "J'ai fabriqué une boîte à lunch avec un tiroir secret."], ['Didi', "Qu'est-ce qu'il y a dedans?"], ['Groloup', "C'est un secret! ...Un sandwich aux tomates."]],
   ] },
@@ -3456,6 +3478,10 @@ function update(dt) {
       if (G.state === 'monte') { updateEnemies(dt); G.stats.t += dt;
         if (G.stats.t > G.lev.parTime) { addAmour(-AMOUR.retardParSec * dt); if (!P.impatient) { P.impatient = true; pop("Didi s'impatiente...", P.x, P.y - 44, '#ff9ab0'); } } }
       updateItems(dt); updateParticles(dt); ambient(dt); updateCamera(dt, G.state === 'descend' ? W - 105 : 105);
+      if (G.state === 'monte' && !G.fauxDepart && G.stats.t > .6 && (P.x < G.lev.homeX + 28 || (G.stats.t > 5 && P.x < G.lev.homeX + 70))) {
+        G.fauxDepart = true; Sound.fx('blip');
+        G.banniere = { txt: piocher('bacul', BACUL), t: 0 };
+      }
       if (G.state === 'monte' && P.x >= G.lev.didiX - 34) startArrival();
       if (G.state === 'descend' && P.x <= G.lev.homeX + 34) endVisit();
       break;
@@ -3474,6 +3500,17 @@ function update(dt) {
   }
 }
 
+// message en bandeau sous la jauge (ex.: faux départ), lisible même pendant le zoom
+function drawBanniere() {
+  const B = G.banniere; B.t += G.dtFrame || 1 / 60;
+  if (B.t > 3.2 || G.state !== 'monte') { G.banniere = null; return; }
+  const a = Math.min(1, B.t / .2, (3.2 - B.t) / .3);
+  const lignes = wrap(B.txt, 5.5, 250);
+  g.globalAlpha = a;
+  rect(26, 40, 268, lignes.length * 10 + 10, 'rgba(16,8,28,.82)'); rect(26, 40, 268, 1, '#ffe060');
+  g.globalAlpha = 1;
+  if (a > .5) lignes.forEach((l, i) => txt(l, 160, 46 + i * 10, 5.5, '#ffe060', 'center'));
+}
 function render() {
   g = gMonde; ZOOM_IMAGE = null; UI_UTILISE = false; gUI.clearRect(0, 0, W, H);
   g.imageSmoothingEnabled = false;
@@ -3483,7 +3520,7 @@ function render() {
     case 'badges': drawBadges(); break;
     case 'honneur': drawHonneur(); break;
     case 'intro': drawIntro(); break;
-    case 'monte': case 'descend': drawWorld(); drawHUD(); break;
+    case 'monte': case 'descend': drawWorld(); drawHUD(); if (G.banniere) drawBanniere(); break;
     case 'arrivee': {
       // un badge s'affiche en haut pendant les répliques: la jauge se tasse le temps qu'il passe
       drawWorld(); if (!(G.toasts && G.toasts.length)) drawHUD();
