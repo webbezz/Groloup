@@ -317,9 +317,59 @@ const EVENEMENTS = [
   { id: 'oiseaux', nom: 'Les oiseaux migrent', intro: "Des volées d'oiseaux traversent le rang. Garde la tête basse!",
     poids: { oiseau: 2.2 }, didi: "Les oiseaux t'ont pas trop achalé?", sujet: 'oiseau',
     rep: st => st.causes.oiseau ? "Un m'a foncé dedans! J'ai encore des plumes partout." : "Je me suis fait tout petit sur mon bicycle!", saisons: ['printemps', 'automne'] },
-  { id: 'mouffettes', nom: 'Saison des mouffettes', intro: 'Les mouffettes se promènent... Pas de sonnette proche d\'elles!',
+  { id: 'mouffettes', sujet: 'odeur', nom: 'Saison des mouffettes', intro: 'Les mouffettes se promènent... Pas de sonnette proche d\'elles!',
     poids: { mouffette: 2.5 }, saisons: ['ete', 'automne', 'nuit'] },
 ];
+
+// Remarques de Didi sur la journée (selon le scénario de la visite), avec la réponse de Groloup.
+// Plusieurs variantes par scénario: d'une partie à l'autre, on ne revoit pas toujours la même.
+const REMARQUES = {
+  vent: [
+    ["T'as les cheveux tout mêlés!", "Le vent m'a coiffé à sa manière."],
+    ["Le vent t'a pas trop poussé par en arrière?", "Trois coups de pédale en avant, deux en arrière!"],
+    ["T'as les joues rouges comme des pommes!", "C'est le vent... pis un peu toi."],
+  ],
+  chaleur: [
+    ["T'es rouge comme une tomate! Veux-tu de la limonade?", "Oui! Un gros verre, s'il te plaît!"],
+    ["T'as chaud, hein? Viens t'asseoir à l'ombre.", "Merci! Le soleil tapait fort dans la côte."],
+    ["Veux-tu un verre d'eau froide?", "Deux, si ça te dérange pas!"],
+  ],
+  pluie: [
+    ["T'es trempé! Je vais te chercher une serviette.", "Merci! Mes bas font flouc flouc."],
+    ["T'as pédalé sous la pluie pour moi?", "Une petite averse, ça m'arrête pas!"],
+    ["Enlève tes souliers avant d'entrer!", "Mes souliers sont rendus des chaloupes!"],
+  ],
+  bleuets: [
+    ["Pas trop d'ours sur la route?", st => st.causes.ours ? "Un ou deux... ils voulaient mes bleuets!" : "Pas un! Ils étaient trop occupés à manger."],
+    ["T'as les doigts tout bleus!", "J'ai goûté aux bleuets... juste un peu."],
+    ["Les bleuets sont mûrs, hein?", st => st.causes.ours ? "Oui! Les ours sont d'accord avec toi." : "Oui! Je t'en ai même gardé... un."],
+  ],
+  chiens: [
+    ["J'ai entendu japper jusqu'ici!", st => st.causes.chien ? "C'était les chiens du rang... après moi!" : "Ils m'ont couru après, mais je suis plus vite qu'eux!"],
+    ["Les chiens du rang t'aiment ben, on dirait!", st => st.causes.chien ? "Un peu trop! Ils voulaient mon pantalon." : "Ils voulaient juste faire la course."],
+  ],
+  nids: [
+    ["T'as l'air un peu secoué!", "Le chemin a plus de trous que de chemin!"],
+    ["Le rang est-tu encore plein de trous?", "J'en ai compté cent douze!"],
+    ["Ton bicycle fait un drôle de bruit.", "Il s'est fait brasser dans les trous du chemin."],
+  ],
+  fleurs: [
+    ["Les champs sont pleins de fleurs {auj}!", "J'ai pas pu toutes les cueillir, y en avait trop!"],
+    ["Ça sent bon jusqu'ici, avec toutes ces fleurs-là!", "Le rang 14 s'est mis beau pour toi."],
+  ],
+  pommes: [
+    ["Tu sens la tarte aux pommes!", "J'en ai croqué une ou deux en chemin."],
+    ["T'as des pommes dans tes poches?", "Juste une... pis elle est pour toi!"],
+  ],
+  oiseaux: [
+    ["Les oiseaux t'ont pas trop achalé?", st => st.causes.oiseau ? "Un m'a foncé dedans! J'ai encore des plumes partout." : "Je me suis fait tout petit sur mon bicycle!"],
+    ["Les oiseaux sont pas mal énervés {auj}!", st => st.causes.oiseau ? "Un m'a pris pour un nid!" : "Ils chantaient pour m'encourager!"],
+  ],
+  mouffettes: [
+    ["Y avait-tu des mouffettes sur le chemin?", st => st.mouffette ? "Une. On s'est rencontrés de proche." : "Plein! Mais je les ai toutes évitées."],
+    ["Mon père dit que c'est la saison des mouffettes.", st => st.mouffette ? "Je peux te le confirmer..." : "Je l'ai remarqué! J'en ai vu trois."],
+  ],
+};
 
 const TAGLINES = ["Groloup enfourche son bicycle...", "Coiffé, parfumé, prêt à pédaler!", "Didi l'attend. Peut-être.",
   "Le rang 14 a jamais été aussi à pic!", "Allez Groloup, l'amour se mérite!", "Il a mis sa plus belle chemise.",
@@ -327,8 +377,21 @@ const TAGLINES = ["Groloup enfourche son bicycle...", "Coiffé, parfumé, prêt 
   "Direction: chez Didi!", "Il siffle en partant... ça va bien aller!"];
 
 // Pioche sans remise: chaque paquet est mélangé, puis vidé avant d'être remélangé
+// Les paquets de répliques sont gardés sur l'appareil (gd_paquets), d'une partie à l'autre:
+// une nouvelle partie continue où la dernière s'est arrêtée, donc on voit tout avant qu'une réplique revienne.
+function chargerPaquets() {
+  const p = load('gd_paquets', null) || {};
+  G.decks = p.decks || {}; G.derniers = p.derniers || {}; G.tailles = p.tailles || {};
+}
+function sauverPaquets() { store('gd_paquets', { decks: G.decks, derniers: G.derniers, tailles: G.tailles }); }
 function piocher(nom, arr, ok) {
-  G.decks = G.decks || {}; G.derniers = G.derniers || {};
+  G.decks = G.decks || {}; G.derniers = G.derniers || {}; G.tailles = G.tailles || {};
+  // des répliques ont été ajoutées depuis la dernière partie: elles entrent dans le paquet (jamais vues)
+  const avant = G.tailles[nom];
+  if (G.decks[nom] && avant != null && arr.length > avant) {
+    for (let i = avant; i < arr.length; i++) G.decks[nom].splice((Math.random() * (G.decks[nom].length + 1)) | 0, 0, i);
+  }
+  G.tailles[nom] = arr.length;
   const melanger = () => {
     const d = arr.map((_, i) => i);
     for (let i = d.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [d[i], d[j]] = [d[j], d[i]]; }
@@ -345,6 +408,7 @@ function piocher(nom, arr, ok) {
   }
   const i = d.splice(k, 1)[0];
   G.derniers[nom] = i;
+  sauverPaquets();
   return arr[i];
 }
 
@@ -2366,9 +2430,12 @@ function startArrival() {
   ajouter(ex);
   // 3) la remarque de Didi sur la journée, avec la réponse de Groloup (sauf si on vient d'en parler)
   const evt = G.event;
-  if (evt && evt.didi && evt.sujet !== sujet && L.length <= 4) {
-    L.push(['Didi', evt.didi]);
-    if (evt.rep) L.push(['Groloup', typeof evt.rep === 'function' ? evt.rep(st) : evt.rep]);
+  if (evt && REMARQUES[evt.id] && evt.sujet !== sujet && L.length <= 4) {
+    const r = piocher('rem_' + evt.id, REMARQUES[evt.id]);
+    if (r) {
+      L.push(['Didi', r[0].replace('{auj}', auj)]);
+      L.push(['Groloup', typeof r[1] === 'function' ? r[1](st) : r[1]]);
+    }
   }
   if (st.fleurs >= 15) A.bonus = (A.bonus || 0) + 1;
   if (st.t < lev.parTime * .7) A.bonus = (A.bonus || 0) + 1;
@@ -2442,7 +2509,7 @@ function endVisit() {
   G.partie.par += G.up ? G.up.parTime : 0; G.partie.coeurs += G.stats.coeurs;
   suivi('visite', G.visite, { amour: Math.floor(G.amour), temps: Math.round(G.stats.t), fleurs: G.stats.fleurs, plantes: G.stats.plantes });
   if (G.oui) { startFinale(); return; }
-  store('groloup_didi', { visite: G.visite + 1, amour: G.amour, fleurs: G.totalFleurs, decks: G.decks, derniers: G.derniers, pet: G.pet, vus: G.vus || {}, partie: G.partie });
+  store('groloup_didi', { visite: G.visite + 1, amour: G.amour, fleurs: G.totalFleurs, pet: G.pet, vus: G.vus || {}, partie: G.partie });
   setState('bilan');
   Sound.play('amour');
 }
@@ -2539,10 +2606,10 @@ function updateTitle(dt) {
     if (choix === 'badges') { setState('badges'); return; }
     if (choix === 'continuer') {
       G.visite = G.save.visite; G.amour = G.save.amour; G.totalFleurs = G.save.fleurs || 0;
-      G.decks = G.save.decks || {}; G.derniers = G.save.derniers || {}; G.pet = G.save.pet || 0; G.vus = G.save.vus || { chanson: !!G.save.chanson }; G.partie = Object.assign({ plantes: 0, temps: 0, par: 0, coeurs: 0, ours: 0, sansFaute: 0, wheelie: 0 }, G.save.partie || {});
+      chargerPaquets(); G.pet = G.save.pet || 0; G.vus = G.save.vus || { chanson: !!G.save.chanson }; G.partie = Object.assign({ plantes: 0, temps: 0, par: 0, coeurs: 0, ours: 0, sansFaute: 0, wheelie: 0 }, G.save.partie || {});
       G.oui = false; suivi('reprise', G.visite, { amour: Math.floor(G.amour) }); startVisit();
     } else {
-      G.visite = 1; G.amour = 0; G.totalFleurs = 0; G.decks = {}; G.derniers = {}; G.pet = 0; G.oui = false; G.vus = {}; G.partie = { plantes: 0, temps: 0, par: 0, coeurs: 0, ours: 0, sansFaute: 0, wheelie: 0 };
+      G.visite = 1; G.amour = 0; G.totalFleurs = 0; chargerPaquets(); G.pet = 0; G.oui = false; G.vus = {}; G.partie = { plantes: 0, temps: 0, par: 0, coeurs: 0, ours: 0, sansFaute: 0, wheelie: 0 };
       suivi('nouvelle', 1);
       startVisit();   // les instructions restent dans « Comment jouer » au menu
     }
@@ -3368,6 +3435,7 @@ Sound.muted = !!load('gd_mute', false);
 if (Sound.muted) { $('bMute').style.opacity = .45; $('bMute').innerHTML = '&#215;'; }
 if ('ontouchstart' in window && matchMedia('(pointer: coarse)').matches) enableTouch();
 resize();
+chargerPaquets();
 startTitle();
 if (document.fonts && document.fonts.load) document.fonts.load('16px "Press Start 2P"').catch(() => { });
 requestAnimationFrame(loop);
