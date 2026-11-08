@@ -2204,12 +2204,13 @@ function drawPlayer(cx, cy) {
   else if (G.lev.down) img = SPR.happy[(P.phase | 0) % 8];
   else img = SPR.effort[(P.phase | 0) % 8];
   const wa = P.wheelieA || 0;
+  const px = Math.round(P.x - G.camX) + (cx - Math.round(G.camX));   // même arrondi que la caméra (+ secousse)
   if (wa > .01) {
-    g.save(); g.translate(Math.round(P.x - cx - P.face * 9), Math.round(P.y - cy)); g.rotate(P.angle - P.face * wa);
+    g.save(); g.translate(Math.round(px - P.face * 9), Math.round(P.y - cy)); g.rotate(P.angle - P.face * wa);
     if (P.face < 0) g.scale(-1, 1);
     g.drawImage(img, -7, -36); g.restore();
   } else {
-    g.save(); g.translate(Math.round(P.x - cx), Math.round(P.y - cy)); g.rotate(P.angle);
+    g.save(); g.translate(px, Math.round(P.y - cy)); g.rotate(P.angle);
     if (P.face < 0) g.scale(-1, 1);
     g.drawImage(img, -16, -36); g.restore();
   }
@@ -2236,29 +2237,27 @@ function drawParticles(cx, cy) {
   for (const q of G.pops) txt(q.txt, q.x - cx, q.y - cy, q.size, q.col, 'center');
 }
 
-// Zoom: près d'une maison, la caméra cadre Groloup ET la maison (jusqu'à 2x), pis dézoome en s'éloignant
+// Zoom: près d'une maison, la caméra cadre Groloup ET la maison (jusqu'à 2x), pis dézoome en s'éloignant.
+// Le zoom est ancré sur Groloup lui-même: il glisse en douceur à l'écran, sans sauts de pixels quand il roule.
 const ZOOM_ETATS = { intro: 1, monte: 1, arrivee: 1, retour: 1, descend: 1, bilan: 1 };
 function cibleZoom() {
   const lev = G.lev;
-  if (!lev || !ZOOM_ETATS[G.state] || lev.didiX == null || lev.didiX < 0) return { z: 1, k: 0, fx: P.x, fy: P.y - 30, sy: H / 2 };
+  if (!lev || !ZOOM_ETATS[G.state] || lev.didiX == null || lev.didiX < 0) return { z: 1, k: 0, hx: P.x, sol: 128 };
   const maisons = [lev.homeX - 8, lev.didiX - 4];
   const hx = Math.abs(P.x - maisons[0]) < Math.abs(P.x - maisons[1]) ? maisons[0] : maisons[1];
-  const dist = Math.abs(hx - P.x);
-  const k = clamp(W / (dist + 120) - 1, 0, 1);           // 0 = loin, 1 = tout près de la maison
-  const fx = (hx + P.x) / 2, sol = gyAt(lev, P.x);
-  // pendant les répliques (boîte en bas): le chemin juste au-dessus de la boîte
-  if (G.state === 'arrivee') return { z: 1 + k * .5, k, fx, fy: sol, sy: 113 };
-  // sous la carte du début ou du retour (en haut): le chemin en bas de l'écran
-  if (G.state === 'intro' || G.state === 'retour') return { z: 1 + k * .6, k, fx, fy: sol, sy: 168 };
-  return { z: 1 + k, k, fx, fy: ((gyAt(lev, hx) - 32) + (P.y - 20)) / 2, sy: H / 2 + 6 };
+  const k = clamp(W / (Math.abs(hx - P.x) + 120) - 1, 0, 1);   // 0 = loin, 1 = tout près de la maison
+  // où placer le chemin à l'écran: au-dessus des répliques, sous les cartes du haut, sinon un peu sous le centre
+  if (G.state === 'arrivee') return { z: 1 + k * .5, k, hx, sol: 113 };
+  if (G.state === 'intro' || G.state === 'retour') return { z: 1 + k * .6, k, hx, sol: 168 };
+  return { z: 1 + k, k, hx, sol: 128 };
 }
 function majZoom() {
   const c = cibleZoom(), dt = Math.min(.05, G.dtFrame || 1 / 60);
   const Z = G.zoomCur;
   if (!Z || Z.lev !== G.lev) { G.zoomCur = Object.assign({ lev: G.lev }, c); return G.zoomCur; }
-  const a = Math.min(1, dt * 6), b = Math.min(1, dt * 3);
+  const b = Math.min(1, dt * 3);
   Z.z = approach(Z.z, c.z, dt * 1.6); Z.k = approach(Z.k, c.k, dt * 1.6);
-  Z.fx = lerp(Z.fx, c.fx, a); Z.fy = lerp(Z.fy, c.fy, b); Z.sy = lerp(Z.sy, c.sy, b);
+  Z.hx = lerp(Z.hx, c.hx, Math.min(1, dt * 6)); Z.sol = lerp(Z.sol, c.sol, b);
   return Z;
 }
 function drawWorld() {
@@ -2267,13 +2266,15 @@ function drawWorld() {
   const Z = majZoom();
   const zoome = Z.z > 1.01;
   if (zoome) {
-    const k = Z.k;
-    const ax = Z.fx - cx, ay = Z.fy - cy;              // le point visé, à l'écran sans zoom
+    const k = Z.k, z = Z.z;
+    // ancre: les pieds de Groloup tels que dessinés dans l'image du monde (position stable quand la caméra le suit)
+    const ax = Math.round(P.x - G.camX) + (cx - Math.round(G.camX)), ay = Math.round(P.y) - cy;
+    // où on veut ses pieds à l'écran: la maison et lui centrés ensemble, le chemin à la bonne hauteur
+    let tx = lerp(ax, W / 2 - (Z.hx - P.x) * z / 2, k), ty = lerp(ay, Z.sol, k);
     // la vue zoomée reste à l'intérieur de ce que la caméra dessine (jamais de trou sur les bords)
-    const tx = clamp(lerp(ax, W / 2, k), W - (W - ax) * Z.z, ax * Z.z);
-    const ty = clamp(lerp(ay, Z.sy, k), H - (H - ay) * Z.z, ay * Z.z);
-    ZOOM_IMAGE = { sx: ax - tx / Z.z, sy: ay - ty / Z.z, z: Z.z };
-    TXT_ZOOM = { ax, ay, tx, ty, z: Z.z };
+    tx = clamp(tx, W - (W - ax) * z, ax * z); ty = clamp(ty, H - (H - ay) * z, ay * z);
+    ZOOM_IMAGE = { sx: ax - tx / z, sy: ay - ty / z, z };
+    TXT_ZOOM = { ax, ay, tx, ty, z };
   }
   drawSky(cx, cy);
   drawDecor(cx, cy);
