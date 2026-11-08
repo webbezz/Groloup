@@ -2272,7 +2272,7 @@ function drawWorld() {
     // la vue zoomée reste à l'intérieur de ce que la caméra dessine (jamais de trou sur les bords)
     const tx = clamp(lerp(ax, W / 2, k), W - (W - ax) * Z.z, ax * Z.z);
     const ty = clamp(lerp(ay, Z.sy, k), H - (H - ay) * Z.z, ay * Z.z);
-    g.save(); g.translate(tx, ty); g.scale(Z.z, Z.z); g.translate(-ax, -ay);
+    ZOOM_IMAGE = { sx: ax - tx / Z.z, sy: ay - ty / Z.z, z: Z.z };
     TXT_ZOOM = { ax, ay, tx, ty, z: Z.z };
   }
   drawSky(cx, cy);
@@ -2282,9 +2282,11 @@ function drawWorld() {
   drawPlayer(cx, cy);
   if (G.state === 'arrivee' && G.arr && G.arr.bouquet > 0 && P.pose === 'debout') drawBouquetArrivee(cx, cy);
   drawParticles(cx, cy);
-  if (zoome) { g.restore(); TXT_ZOOM = null; }
+  TXT_ZOOM = null;
   if (G.pal.night) { g.fillStyle = 'rgba(10,14,50,.18)'; g.fillRect(0, 0, W, H); }
   if (G.event && G.event.ambient === 'pluie' && G.state !== 'titre') { g.fillStyle = 'rgba(50,60,80,.16)'; g.fillRect(0, 0, W, H); }
+  // tout ce qui se dessine après le monde (jauges, répliques, cartes) va dans le calque d'interface, jamais zoomé
+  g = gUI; g.imageSmoothingEnabled = false; UI_UTILISE = true;
 }
 
 // Bouquet de fleurs des champs: sa grosseur suit le nombre de fleurs cueillies
@@ -3228,7 +3230,10 @@ function drawIntermede() {
 // ---------------- ÉCRAN, EntréeS, BOUCLE ----------------
 const out = document.getElementById('screen');
 const octx = out.getContext('2d');
-const [buf, g] = mkCanvas(W, H);
+const [buf, gMonde] = mkCanvas(W, H);
+const [bufUI, gUI] = mkCanvas(W, H);
+let g = gMonde;              // le dessin se fait dans le monde, pis dans l'interface après drawWorld()
+let ZOOM_IMAGE = null, UI_UTILISE = false;
 let S = 2, touchMode = false, layout = { left: 0, top: 0, cw: W, ch: H };
 const $ = id => document.getElementById(id);
 
@@ -3413,6 +3418,7 @@ function update(dt) {
 }
 
 function render() {
+  g = gMonde; ZOOM_IMAGE = null; UI_UTILISE = false; gUI.clearRect(0, 0, W, H);
   g.imageSmoothingEnabled = false;
   switch (G.state) {
     case 'titre': drawTitle(); break;
@@ -3451,7 +3457,11 @@ function render() {
     txt(touchMode ? 'Touche pour continuer' : 'P ou Entrée pour continuer', 160, 96, 5, '#ffd0dc', 'center');
   }
   octx.imageSmoothingEnabled = false;
-  octx.drawImage(buf, 0, 0, out.width, out.height);
+  // le zoom se fait ici, à la résolution de l'écran: chaque pixel du jeu devient un bloc net de l'écran
+  const Z = ZOOM_IMAGE;
+  if (Z) { octx.fillStyle = '#000'; octx.fillRect(0, 0, out.width, out.height); octx.drawImage(buf, Z.sx, Z.sy, W / Z.z, H / Z.z, 0, 0, out.width, out.height); }
+  else octx.drawImage(buf, 0, 0, out.width, out.height);
+  if (UI_UTILISE) octx.drawImage(bufUI, 0, 0, out.width, out.height);
   flushText();
 }
 
