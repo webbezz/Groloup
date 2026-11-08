@@ -708,7 +708,7 @@ function ik(ax, ay, bx, by, l1, l2, pickFn) {
 const LOOK = {
   groloup: { hair: '#a8582a', hairD: '#743818', skin: '#f2c49c', skinD: '#d69a74', shirt: '#86b4e4', shirtD: '#5f8cc4',
     pants: '#7a5230', pantsD: '#5a3a1e', shoe: '#2a1a12' },
-  groloupVieux: { hair: '#6a5a50', hairD: '#4a3e36', skin: '#f0bf98', skinD: '#d09470', shirt: '#2a3550', shirtD: '#1c2438',
+  groloupVieux: { hair: '#d2cdc5', hairD: '#9d978f', skin: '#f0bf98', skinD: '#d09470', shirt: '#2a3550', shirtD: '#1c2438',
     pants: '#4a5a78', pantsD: '#34405a', shoe: '#2a1a12', glasses: '#9aa6b4' },
   didiVieille: { hair: '#7a4a2a', hairD: '#5a3418', skin: '#f2c4a0', skinD: '#d49c78', shirt: '#6a3a78', shirtD: '#4c2858',
     pants: '#6a3a78', pantsD: '#4c2858', shoe: '#2a1a12', glasses: '#d0782a', dress: true },
@@ -719,7 +719,7 @@ const HEADS = {
   groloup: ['..hhhhh.', '.hhhhhhh', 'hhhhhhhh', 'hhhHsses', 'hhhHssss', '.hhHssms', '...Hsss.', '...ss...'],
   groloupEffort: ['..hhhhh.', '.hhhhhhh', 'hhhhhhhh', 'hhhHsses', 'hhhHssss', '.hhHsmms', '...HsSs.', '...ss...'],
   groloupHappy: ['..hhhhh.', '.hhhhhhh', 'hhhhhhhh', 'hhhHsses', 'hhhHssss', '.hhHswws', '...Hsmm.', '...ss...'],
-  groloupVieux: ['...hhh..', '.hhsssss', 'hhssssss', 'hhsGeGGs', 'hHssssss', '.hsswwws', '..hsmms.', '...ss...'],
+  groloupVieux: ['..hhhhh.', '.hhhhhhh', 'hhhhhhhs', 'hhhHGeGG', 'hhhHssss', '.hhHswws', '..hHsmm.', '...ss...'],
   didiVieille: ['..hhhhh.', '.hhhhhhh', 'hhhhhhhs', 'hhhsGeGG', 'hhhsssss', 'hhhswwws', 'hh.ssms.', '...ss...'],
 };
 
@@ -858,6 +858,7 @@ function makeTandem(f) {
   const oG = { ox: 15, hip: [12, 19], bb: [15, 29], crank, look: G, head: 'groloupVieux', sh: [15, 11], hand: [22, 19], plaid: false };
   const rD = drawRider(x, oD), rG = drawRider(x, oG);
   drawBikeFrame(x, 0, wheelA, crank, { long: 40, seats: [12, 27], bbs: [15, 30] });
+  P1(x, 39, 18, '#ffd23a'); P1(x, 40, 18, '#ffd23a'); P1(x, 39, 19, '#c8961a'); P1(x, 40, 19, '#c8961a');
   drawRiderFront(x, oD, rD);
   drawRiderFront(x, oG, rG);
   return c;
@@ -980,10 +981,10 @@ function buildSprites() {
     '...ssssss...', '..bBwtTwBb..', '.bbBvTtvBrb.', '.bbBvtTvBbb.', '.bbbBvvBbbb.', '.bbbbvvbbbb.', '.bbbbbbbbbb.',
     'sbbbbbbbbbbs', '..bbbbbbbb..', '..bbb..bbb..', '..bbb..bbb..', '.bbbb..bbbb.', '.bbbb..bbbb.', '.kkkk..kkkk.'], gPal);
   const mPal = { f: '#ffffff', y: '#ffe9a0', h: '#9a6038', H: '#7a4424', s: '#f4c8a4', e: '#2a1010', w: '#ffffff', W: '#e2e2ec',
-    r: '#d8203a', R: '#9a1028', g: '#3a8a3a', u: '#f4f4ff', v: '#eef0ff' };
+    r: '#d8203a', R: '#9a1028', g: '#3a8a3a', u: '#f4f4ff', v: '#eef0ff', c: '#f09a9a', m: '#b02a3a' };
   SPR.mariee = ascii([
-    '.vffhhhhffv.', 'vfyhhhhhhyfv', 'vhhhhHHhhhhv', 'vhhsssssshhv', 'vhhsesseshhv', 'vhhsssssshhv', 'vhhsswwsshhv',
-    'vhhhwwwwhhhv', 'vhWWwwwwWWhv', 'vhWWwwwwWWhv', 'v.swwwwwws.v', 'v.swrRrgws.v', '..wgrrRrgw..', '...wgRrgw...',
+    '.vffhhhhffv.', 'vfyhhhhhhyfv', 'vhhhhHHhhhhv', 'vhhsssssshhv', 'vhhsesseshhv', 'vhhcsssschhv', 'vhhssmmsshhv',
+    'vhhhhsshhhhv', 'vhWWwwwwWWhv', 'vhWWwwwwWWhv', 'v.swwwwwws.v', 'v.swrRrgws.v', '..wgrrRrgw..', '...wgRrgw...',
     '..wwwuuwww..', '.wwwwuwwwww.', '.wwwwwuwwww.', 'wwwwwwwwwwww', 'wwwWwwwwwWww', 'wwwwwwwwwwww', 'WwwwwwwwwwwW'], mPal);
   // Groloup de face, habits de tous les jours (pour les intermèdes)
   SPR.groloupFace = ascii([
@@ -2580,9 +2581,25 @@ function ventFinale(t, T) {
   fin.msgs.push({ txt: PROUTS[(Math.random() * PROUTS.length) | 0], x: (gx + 22) * 2, y: (gy - 26) * 2 - dy, t: 0, col: '#d8ff9a', size: 7 });
   fin.msgs.push({ txt: reac, x: (ph === 'foyer' ? 50 : 54) * 2 - fin.off[ph] * 2, y: 66 - dy, t: -.25, col: '#ffb0d8', size: 5 });
 }
+const REACTIONS_DRING = ["Toujours aussi fringant, mon Groloup!", "Ça fait 50 ans que tu sonnes!", "Les voisins vont penser qu'on se remarie!",
+  "Dring dring toi-même!", "T'as pas changé d'un poil!", "Garde tes deux mains sur le guidon!"];
+function sonnetteFinale(T) {
+  if (T <= 0 || (fin.dringCd || 0) > 0) return;
+  fin.dringCd = .9; fin.dring = (fin.dring || 0) + 1; fin.dringT = .5;
+  Sound.fx('dring'); vibrer(30);
+  const px = G.camX + 140, py = gyAt(fin.flat, px);
+  for (let i = 0; i < 4; i++) part('note', px + 18, py - 20, (Math.random() - .3) * 40, -30 - Math.random() * 20, 1.1);
+  // Didi réagit une fois sur deux; sa réplique reste en place sous le titre, sans chevaucher le texte
+  if (fin.dring % 2 === 1) { fin.reac2 = REACTIONS_DRING[(fin.dring >> 1) % REACTIONS_DRING.length]; fin.reac2T = 2.2; }
+  if (fin.dring >= 5) badge('fringant');
+}
 function updateFinale(dt) {
   const t = G.stateT, T = t - FIN_T.tandem;
   if (inp.boostP) ventFinale(t, T);
+  if (inp.toolP) sonnetteFinale(T);
+  if (fin.dringCd > 0) fin.dringCd -= dt;
+  if (fin.dringT > 0) fin.dringT -= dt;
+  if (fin.reac2T > 0) fin.reac2T -= dt;
   for (const k of ['foyer', 'pin']) fin.offCur[k] = approach(fin.offCur[k], fin.off[k], 20 * dt);
   for (const p of fin.puffs) { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= .97; }
   fin.puffs = fin.puffs.filter(p => p.life > 0);
@@ -2609,6 +2626,18 @@ function updateFinale(dt) {
     if ((inp.okP || inp.jumpP) && G.ptsT > .4) { if (G.ptsT < fin_) G.ptsT = fin_; else { G.finEtape = 'nom'; ouvrirNom(); } }
   }
   if (G.finEtape === 'honneur') { G.honT = (G.honT || 0) + dt; if (G.honT > .6 && (inp.okP || inp.jumpP)) { G.honT = 0; startTitle(); } }
+}
+// des canettes au bout de ficelles, pis une petite pancarte « 50 » (comme au mariage, 50 ans plus tard)
+function canettes() {
+  const ch = ['111', '100', '111', '001', '111'], zero = ['111', '101', '101', '101', '111'];
+  rect(-30, -24, 12, 9, '#f4efe2'); rect(-30, -24, 12, 1, '#c8b48a'); rect(-30, -16, 12, 1, '#c8b48a');
+  [ch, zero].forEach((d, k) => d.forEach((row, y) => [...row].forEach((v, x) => { if (v === '1') rect(-28 + k * 5 + x, -22 + y, 1, 1, '#c8203a'); })));
+  rect(-19, -20, 4, 1, '#8a7a6a');
+  for (let i = 0; i < 3; i++) {
+    const cx = -34 - i * 7, cy = -4 - Math.abs(Math.sin(G.t * 14 + i * 1.7)) * 3;
+    g.strokeStyle = '#e8e0d0'; g.lineWidth = .6; g.beginPath(); g.moveTo(-22, -10); g.lineTo(cx + 2, cy); g.stroke();
+    rect(cx, cy, 4, 5, '#b8c0c8'); rect(cx, cy, 4, 1, '#8a9098'); rect(cx + 1, cy + 2, 2, 2, ['#d8342a', '#3a7ad8', '#e8b020'][i]);
+  }
 }
 function cadrePhoto(legende) {
   g.fillStyle = 'rgba(255,190,140,.10)'; g.fillRect(0, 0, W, H);
@@ -2676,9 +2705,15 @@ function drawFinale() {
   drawSky(cx, cy); drawDecor(cx, cy); drawGround(cx, cy);
   const px = G.camX + 140, py = gyAt(fin.flat, px);
   g.save(); g.translate(Math.round(px - cx), Math.round(py - cy)); g.rotate(Math.atan(slopeAt(fin.flat, px)));
-  g.drawImage(SPR.tandem[((G.t * 9) | 0) % 8], -23, -36); g.restore();
+  g.drawImage(SPR.tandem[((G.t * 9) | 0) % 8], -23, -36);
+  canettes();
+  if (fin.dringT > 0 && ((G.t * 20) | 0) % 2) { rect(15, -19, 3, 3, '#fff6a0'); rect(18, -21, 1, 1, '#ffffff'); rect(14, -21, 1, 1, '#ffffff'); }
+  g.restore();
   drawParticles(cx, cy);
   texteFinale();
+  // « Dring dring! » à droite de la sonnette, la réplique de Didi sous la route: rien ne chevauche le titre
+  if (fin.dringT > 0) txt('Dring dring!', Math.round(px - cx) + 44, Math.round(py - cy) - 24, 4.5, '#ffe060', 'center');
+  if (fin.reac2T > 0) txt(fin.reac2, 160, Math.round(py - cy) + 12, 5, '#ffb0d8', 'center');
   if (T > 1) txt(CONFIG.messageFinal.split(' de ')[0], 160, 18, 9, '#ffffff', 'center');
   if (T > 1) txt('de ' + CONFIG.messageFinal.split(' de ').slice(1).join(' de '), 160, 32, 7, '#ffe9a8', 'center');
   if (T > 3) { txt('Groloup', 128, 52, 7, '#bfe4ff', 'right'); spr(SPR.heartBig, 155, 52); txt('Didi', 192, 52, 7, '#ffb0d8', 'left'); }
@@ -3271,12 +3306,13 @@ const BADGES = [
   { id: 'coupdefoudre', nom: 'Coup de foudre', desc: 'Didi conquise en 5 visites', ic: 'heartBig' },
   { id: 'wheelie', nom: 'Roi du wheelie', desc: 'Un wheelie de 3 secondes', ic: 'wheelie' },
   { id: 'oui', nom: 'Oui, je le veux!', desc: 'Finir le jeu', ic: 'bouquet' },
+  { id: 'fringant', nom: 'Toujours fringant', desc: 'Sonner 5 fois en tandem', ic: 'tandem' },
 ];
 G.badges = load('gd_badges', {}) || {};
 G.compteurs = load('gd_compteurs', {}) || {};
 
 function iconeBadge(ic) {
-  const m = { wheelie: SPR.happy[0], fleur: SPR.fleurs[0], ours: SPR.ours[0], vache: SPR.vache[0], tracteur: SPR.tracteur[0], mouffette: SPR.mouffette[0] };
+  const m = { wheelie: SPR.happy[0], fleur: SPR.fleurs[0], ours: SPR.ours[0], vache: SPR.vache[0], tracteur: SPR.tracteur[0], mouffette: SPR.mouffette[0], tandem: SPR.tandem[0] };
   return m[ic] || SPR[ic];
 }
 function badge(id) {
