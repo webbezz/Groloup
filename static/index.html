@@ -2689,7 +2689,7 @@ function startFinale() {
   badge('oui'); if (G.visite <= 5) badge('coupdefoudre');
   G.finEtape = null; G.monScore = null;
   fin = { scene: (() => { const [c, x] = mkCanvas(160, 90); return { c, x }; })(), flat: null,
-    off: { foyer: 0, pin: 0 }, offCur: { foyer: 0, pin: 0 }, puffs: [], msgs: [], reac: 0, vite: 0, yeux: { foyer: 0, pin: 0 }, flash: 0, clics: 0, chien: null };
+    off: { foyer: 0, pin: 0 }, offCur: { foyer: 0, pin: 0 }, puffs: [], msgs: [], reac: 0, vite: 0, yeux: { foyer: 0, pin: 0 }, voile: { foyer: 0, pin: 0 }, petales: [], flash: 0, clics: 0, chien: null };
   const flat = { L: 6000, gy: new Float32Array(6002), gap: new Uint8Array(6002), creeks: [], solids: [], zones: [], items: [], enemies: [], decor: [], cps: [], down: true, didiX: -999, homeX: 99999 };
   for (let i = 0; i < 6002; i++) flat.gy[i] = Math.sin(i / 300) * 6;
   decorate(flat, rngOf(5), null);
@@ -2723,6 +2723,7 @@ function drawWedding(x, t) {
     x.fillStyle = ['#8a6a4a', '#a8805a', '#6a4a30', '#c8a070'][h % 4]; x.fillRect(xx, yy, 1, 1);
   }
   x.fillStyle = 'rgba(80,50,30,.35)'; x.fillRect(0, 54, 160, 36);
+  voileAuVent(x, 'foyer', 63 - Math.round(fin.offCur.foyer), 44);
   x.drawImage(SPR.mariee, 63 - Math.round(fin.offCur.foyer), 44);
   x.drawImage(fin.yeux.foyer > 0 ? SPR.marieYF : SPR.marie, 84, 44);
   x.drawImage(SPR.tapis, 59, 62);
@@ -2746,6 +2747,9 @@ function ventFinale(t, T) {
   const ph = t < FIN_T.pin ? 'foyer' : 'pin';
   badge('photobombe');
   fin.off[ph] = Math.min(24, fin.off[ph] + 6);
+  fin.voile[ph] = 2.4;
+  const bx = (ph === 'foyer' ? 63 : 66) - fin.offCur[ph], by = ph === 'foyer' ? 44 : 47;
+  for (let i = 0; i < 5; i++) fin.petales.push({ ph, x: bx + 3 + Math.random() * 6, y: by + 1, vx: -18 - Math.random() * 22, vy: -8 + Math.random() * 10, life: 1.6, c: ['#ffffff', '#ffd0e0', '#ffe9a8'][i % 3] });
   const gx = ph === 'foyer' ? 90 : 86, gy = ph === 'foyer' ? 62 : 66;
   for (let i = 0; i < 12; i++) fin.puffs.push({ x: gx, y: gy, vx: 6 + Math.random() * 18, vy: -4 - Math.random() * 10, life: 1.4, max: 1.4 });
   const dy = Math.min(3, fin.msgs.length >> 1) * 14;
@@ -2794,7 +2798,9 @@ function updateFinale(dt) {
   if (inp.boostP) ventFinale(t, T);
   if (inp.toolP) { if (T > 0) sonnetteFinale(T); else flashPhoto(t); }
   if (fin.flash > 0) fin.flash -= dt;
-  for (const k of ['foyer', 'pin']) if (fin.yeux[k] > 0) fin.yeux[k] -= dt;
+  for (const k of ['foyer', 'pin']) { if (fin.yeux[k] > 0) fin.yeux[k] -= dt; if (fin.voile[k] > 0) fin.voile[k] -= dt; }
+  for (const p of fin.petales) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 14 * dt; p.vx *= 1 - dt * .6; p.life -= dt; }
+  fin.petales = fin.petales.filter(p => p.life > 0);
   if (T > 0) majChien(dt);
   if (fin.dringCd > 0) fin.dringCd -= dt;
   if (fin.dringT > 0) fin.dringT -= dt;
@@ -2826,6 +2832,19 @@ function updateFinale(dt) {
   }
   if (G.finEtape === 'honneur') { G.honT = (G.honT || 0) + dt; if (G.honT > .6 && (inp.okP || inp.jumpP)) { G.honT = 0; startTitle(); } }
 }
+function voileAuVent(x, ph, bx, by) {
+  const f = clamp((fin.voile[ph] || 0) / 2.4, 0, 1);
+  if (f <= 0) return;
+  const L = Math.round(4 + 13 * f);
+  for (let i = 1; i <= L; i++) {
+    const u = i / L;
+    const h = Math.max(2, Math.round(11 - 8 * u));
+    const ond = Math.round(Math.sin(G.t * 15 - i * .8) * 2.2 * u - u * 3 * f);
+    x.fillStyle = 'rgba(238,240,255,' + (.95 - .35 * u) + ')'; x.fillRect(bx + 1 - i, by + 1 + ond + Math.round(u * 2), 1, h);
+    x.fillStyle = 'rgba(200,206,235,' + (.7 - .3 * u) + ')'; x.fillRect(bx + 1 - i, by + 1 + ond + Math.round(u * 2) + h - 1, 1, 1);
+  }
+  for (const p of fin.petales) if (p.ph === ph) { x.fillStyle = p.c; x.fillRect(Math.round(p.x), Math.round(p.y), 1, 1); }
+}
 function flashBlanc() { if (fin.flash > 0) { g.fillStyle = 'rgba(255,255,255,' + clamp(fin.flash / .35, 0, 1) * .85 + ')'; g.fillRect(0, 0, W, H); } }
 function cadrePhoto(legende) {
   g.fillStyle = 'rgba(255,190,140,.10)'; g.fillRect(0, 0, W, H);
@@ -2847,6 +2866,7 @@ function drawPin(x, t) {
   }
   sR(x, 0, 60, 160, 30, '#5e7e3c');
   for (let k = 0; k < 90; k++) P1(x, hsh(k * 11) % 160, 61 + hsh(k * 17) % 28, k % 2 ? '#7a9a4a' : '#4a6a2e');
+  voileAuVent(x, 'pin', 66 - Math.round(fin.offCur.pin), 47);
   x.drawImage(SPR.mariee, 66 - Math.round(fin.offCur.pin), 47); x.drawImage(fin.yeux.pin > 0 ? SPR.marieYF : SPR.marie, 80, 47);
 }
 function bouffees(x) {
@@ -3547,6 +3567,7 @@ function drawToasts(dt) {
   let x = 90, y = 185 - A * 37;
   if (G.state === 'arrivee') { x = 4; y = 4 - (1 - A) * 8; g.globalAlpha = A; }            // par-dessus la jauge, loin des personnages
   else if (G.state === 'intermede') { x = 176; y = 16 - (1 - A) * 8; g.globalAlpha = A; }
+  else if (G.state === 'finale' && G.stateT < FIN_T.tandem) { x = 90; y = 4 - (1 - A) * 8; g.globalAlpha = A; }   // photos: la légende est en bas
   panel(x, y, 140, 26);
   dessinIcone(iconeBadge(T.b.ic), x + 16, y + 13, 18, 16);
   txt('Badge débloqué!', x + 30, y + 5, 4, '#ffe060');
