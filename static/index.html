@@ -2672,18 +2672,6 @@ function updateFinale(dt) {
   }
   if (G.finEtape === 'honneur') { G.honT = (G.honT || 0) + dt; if (G.honT > .6 && (inp.okP || inp.jumpP)) { G.honT = 0; startTitle(); } }
 }
-// des canettes au bout de ficelles, pis une petite pancarte « 50 » (comme au mariage, 50 ans plus tard)
-function canettes() {
-  const ch = ['111', '100', '111', '001', '111'], zero = ['111', '101', '101', '101', '111'];
-  rect(-30, -24, 12, 9, '#f4efe2'); rect(-30, -24, 12, 1, '#c8b48a'); rect(-30, -16, 12, 1, '#c8b48a');
-  [ch, zero].forEach((d, k) => d.forEach((row, y) => [...row].forEach((v, x) => { if (v === '1') rect(-28 + k * 5 + x, -22 + y, 1, 1, '#c8203a'); })));
-  rect(-19, -20, 4, 1, '#8a7a6a');
-  for (let i = 0; i < 3; i++) {
-    const cx = -34 - i * 7, cy = -4 - Math.abs(Math.sin(G.t * 14 + i * 1.7)) * 3;
-    g.strokeStyle = '#e8e0d0'; g.lineWidth = .6; g.beginPath(); g.moveTo(-22, -10); g.lineTo(cx + 2, cy); g.stroke();
-    rect(cx, cy, 4, 5, '#b8c0c8'); rect(cx, cy, 4, 1, '#8a9098'); rect(cx + 1, cy + 2, 2, 2, ['#d8342a', '#3a7ad8', '#e8b020'][i]);
-  }
-}
 function flashBlanc() { if (fin.flash > 0) { g.fillStyle = 'rgba(255,255,255,' + clamp(fin.flash / .35, 0, 1) * .85 + ')'; g.fillRect(0, 0, W, H); } }
 function cadrePhoto(legende) {
   g.fillStyle = 'rgba(255,190,140,.10)'; g.fillRect(0, 0, W, H);
@@ -2756,7 +2744,6 @@ function drawFinale() {
   }
   g.save(); g.translate(Math.round(px - cx), Math.round(py - cy)); g.rotate(Math.atan(slopeAt(fin.flat, px)));
   g.drawImage(SPR.tandem[((G.t * 9) | 0) % 8], -23, -36);
-  canettes();
   if (fin.dringT > 0 && ((G.t * 20) | 0) % 2) { rect(15, -19, 3, 3, '#fff6a0'); rect(18, -21, 1, 1, '#ffffff'); rect(14, -21, 1, 1, '#ffffff'); }
   g.restore();
   drawParticles(cx, cy);
