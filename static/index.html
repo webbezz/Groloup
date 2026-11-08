@@ -194,7 +194,7 @@ const DIALOGUES = {
     [['Didi', "Il reste-tu des fleurs dans les champs?"], ['Groloup', "J'en ai laissé quelques-unes pour la prochaine fois."]],
     [['Didi', "C'est le plus beau bouquet que j'ai jamais eu!"], ['Groloup', "Attends de voir celui de la prochaine fois!"]],
     [['Didi', "Je vais en mettre dans toutes les pièces!"], ['Groloup', "Même dans le poulailler?"]],
-    [['Didi', "Ça va sentir bon jusque dans la cuisine!"], ['Groloup', "Plus fort que ta tarte aux pommes?"]],
+    { l: [['Didi', "Ça va sentir bon jusque dans la cuisine!"], ['Groloup', "Plus fort que ta tarte aux pommes?"]], sauf: 'pommes' },
   ],
   bouquet: [
     [['Groloup', "Tiens, je t'ai cueilli des fleurs."], ['Didi', "Merci! Je vais les mettre sur la table de la cuisine."]],
@@ -2178,9 +2178,46 @@ function drawWorld() {
   drawGround(cx, cy);
   drawEntities(cx, cy);
   drawPlayer(cx, cy);
+  if (G.state === 'arrivee' && G.arr && G.arr.bouquet > 0 && P.pose === 'debout') drawBouquetArrivee(cx, cy);
   drawParticles(cx, cy);
   if (G.pal.night) { g.fillStyle = 'rgba(10,14,50,.18)'; g.fillRect(0, 0, W, H); }
   if (G.event && G.event.ambient === 'pluie' && G.state !== 'titre') { g.fillStyle = 'rgba(50,60,80,.16)'; g.fillRect(0, 0, W, H); }
+}
+
+// Bouquet de fleurs des champs: sa grosseur suit le nombre de fleurs cueillies
+const COUL_FLEURS = ['#ffffff', '#ffe060', '#ff8ac0', '#b48aff', '#ff6a5a', '#8ad8ff'];
+function drawBouquet(x, y, n) {
+  x = Math.round(x); y = Math.round(y);
+  const tier = n >= 25 ? 4 : n >= 15 ? 3 : n >= 10 ? 2 : n >= 5 ? 1 : 0;
+  const tetes = [3, 4, 6, 9, 13][tier], haut = [5, 5, 6, 8, 10][tier], large = [3, 4, 6, 9, 12][tier];
+  const tops = [];
+  for (let i = 0; i < tetes; i++) {
+    const u = tetes === 1 ? 0 : i / (tetes - 1) - .5;
+    const hx = x + Math.round(u * large + ((i * 7) % 3 - 1) * .5);
+    const hy = y - 3 - haut + Math.round(u * u * 4 * (haut * .45)) - (i % 2) * Math.min(2, tier);
+    tops.push([hx, hy, COUL_FLEURS[(i * 5 + n) % COUL_FLEURS.length]]);
+  }
+  // tiges
+  for (const [hx, hy] of tops) { g.strokeStyle = '#3a8a3a'; g.lineWidth = 1; g.beginPath(); g.moveTo(x + .5, y - 2); g.lineTo(hx + .5, hy + 1); g.stroke(); }
+  // fleurs (les plus hautes en arrière)
+  tops.sort((a, b) => a[1] - b[1]);
+  for (const [hx, hy, c] of tops) {
+    rect(hx - 1, hy, 3, 1, c); rect(hx, hy - 1, 1, 3, c);
+    rect(hx, hy, 1, 1, c === '#ffe060' ? '#d0782a' : '#ffe060');
+  }
+  // papier pis ruban
+  const cone = 1 + Math.min(3, tier);
+  for (let k = 0; k < 4; k++) { const w = Math.max(1, Math.round((k + 1) / 4 * cone)); rect(x - w + 1, y - k, w * 2 - 1, 1, k % 2 ? '#f4efe2' : '#e2d8c4'); }
+  rect(x - Math.max(0, cone - 2), y - 2, Math.max(1, cone * 2 - 3), 1, '#e04a6a');
+}
+function drawBouquetArrivee(cx, cy) {
+  const A = G.arr, lev = G.lev;
+  const jump = A.jump ? Math.round(Math.abs(Math.sin(G.t * 9)) * -4) : 0;
+  const ax = P.x + 3, ay = P.y - 11;                                   // dans la main de Groloup
+  const bx = lev.didiX + 16, by = gyAt(lev, lev.didiX) - 10 + jump;   // dans les mains de Didi
+  const k = A.don == null ? 0 : clamp(A.don / .7, 0, 1);
+  const e = k * k * (3 - 2 * k);
+  drawBouquet(lerp(ax, bx, e) - cx, lerp(ay, by, e) - Math.sin(Math.PI * e) * 5 - cy, A.bouquet);
 }
 
 function drawHUD() {
@@ -2286,6 +2323,8 @@ function startArrival() {
   const A = G.arr = { phase: 'roule', lines: [], i: 0, shown: 0, wave: true, jump: false, stopX: lev.didiX - 30 };
   Sound.fx('arrivee');
   if (st.plantes === 0) { badge('sansfaute'); G.partie = G.partie || {}; G.partie.sansFaute = (G.partie.sansFaute || 0) + 1; }
+  // le bouquet: Groloup le tient en arrivant, pis il le donne à Didi (plus il y a de fleurs, plus il est gros)
+  A.bouquet = st.fleurs; A.donIdx = 0; A.don = null;
   if (G.amour >= AMOUR.demande) {
     A.demande = true;
     A.lines = [
@@ -2321,9 +2360,9 @@ function startArrival() {
   else if (st.pets >= 3) ex = tirer('pets', DIALOGUES.pets);
   else if (st.t > lev.parTime) ex = tirer('retard', DIALOGUES.retard);
   else if (st.fleurs === 0) ex = tirer('pasDeFleurs', DIALOGUES.pasDeFleurs);
-  else if (st.fleurs >= 15) ex = tirer('grosBouquet', DIALOGUES.grosBouquet);
+  else if (st.fleurs >= 15) { A.donIdx = L.length; ex = tirer('grosBouquet', DIALOGUES.grosBouquet); }
   else if (st.t < lev.parTime * .7) ex = tirer('vite', DIALOGUES.vite);
-  else ex = tirer('bouquet', DIALOGUES.bouquet);
+  else { A.donIdx = L.length; ex = tirer('bouquet', DIALOGUES.bouquet); }
   ajouter(ex);
   // 3) la remarque de Didi sur la journée, avec la réponse de Groloup (sauf si on vient d'en parler)
   const evt = G.event;
@@ -2338,6 +2377,11 @@ function startArrival() {
 
 function updateArrival(dt) {
   const A = G.arr, lev = G.lev;
+  // le bouquet passe des mains de Groloup à celles de Didi (continue même si on saute les répliques)
+  if (A.don != null && A.don < .7) {
+    A.don += dt;
+    if (A.don >= .7) for (let k = 0; k < 5; k++) part('heart', lev.didiX + 16, gyAt(lev, lev.didiX) - 18, (Math.random() - .5) * 40, -30 - Math.random() * 30, 1.1);
+  }
   if (A.phase === 'roule') {
     P.vx = approach(P.vx, 38, 200 * dt);
     P.x += P.vx * dt; P.y = gyAt(lev, P.x); P.angle = Math.atan(slopeAt(lev, P.x)); P.phase += P.vx * dt / 4.2;
@@ -2349,6 +2393,7 @@ function updateArrival(dt) {
       if (A.sansFaute) addAmour(2, P.x + 30, P.y - 54, 'Sans faute! +2');
     }
   } else if (A.phase === 'dialogue') {
+    if (A.bouquet > 0 && A.don == null && A.i >= A.donIdx) { A.don = 0; Sound.fx('fleur'); }
     const line = A.lines[A.i];
     const before = A.shown | 0;
     A.shown = Math.min(line[1].length, A.shown + 38 * dt);
