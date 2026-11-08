@@ -118,6 +118,9 @@ const DIALOGUES = {
     [['Groloup', "Salut! J'ai pris le chemin le plus court... y en a juste un."]],
     [['Groloup', "Ton père est-tu là?"], ['Didi', "Non, il est au bois."], ['Groloup', "Ouf! Je voulais pas repartir avec du plomb dans les fesses."]],
     [['Groloup', "Surprise, Didi!"], ['Didi', "Bon! Groloup qui vient encore er'tontir sans avertir!"]],
+    [['Groloup', "Bonjour Didi! J'ai mis de la brillantine dans mes cheveux!"], ['Didi', "Ça brille plus que ton bicycle!"]],
+    { l: [['Groloup', "Allô Didi! J'ai fait le train de bonne heure pour venir te voir."], ['Didi', "Ça paraît, tu sens l'étable!"]], jour: true },
+    { l: [['Groloup', "Bonsoir Didi! J'ai suivi la lumière de ta galerie."], ['Didi', "Comme les papillons de nuit!"]], soir: true },
   ],
   mouffette: [
     [['Didi', "Hmm... t'as un nouveau parfum?"], ['Groloup', "Eau de mouffette. C'est la grosse mode."]],
@@ -137,12 +140,15 @@ const DIALOGUES = {
     [['Didi', "T'avais le vent dans le dos {auj}!"], ['Groloup', "Un vent maison, fait avec des bleuets!"]],
     [['Didi', "Les vaches se demandent encore c'était quoi, ce bruit-là!"], ['Groloup', "Moi aussi... moi aussi."]],
     [['Groloup', "C'est le vent qui m'a poussé jusqu'ici!"], ['Didi', "Essaie pas de m'accrères ça, toi!"]],
+    [['Didi', "T'as mangé des binnes pour déjeuner, toi!"], ['Groloup', "Comment tu le sais?"], ['Didi', "Tout le rang 14 le sait!"]],
+    [['Didi', "Les corneilles se sont envolées toutes en même temps!"], ['Groloup', "Un coup de vent... qui venait pas de loin."]],
   ],
   // bobos: selon ce qui l'a fait tomber le plus souvent
   bobos: {
     ours: [
       [['Groloup', "Flûte que les ours sont tannants {auj}!"], ['Didi', "Un ours?! T'es-tu correct?"], ['Groloup', "Oui, oui. Il voulait juste mes bleuets."]],
       [['Groloup', "Un ours m'a pris pour son pique-nique!"], ['Didi', "Mon doux! Viens t'asseoir, tu trembles!"]],
+      [['Groloup', "J'ai vu un ours gros comme une grange!"], ['Didi', "Gros comme une grange?"], ['Groloup', "...Comme un poulailler, mettons."]],
     ],
     eau: [
       [['Didi', "T'es tout mouillé jusqu'aux genoux!"], ['Groloup', "J'ai fait un petit détour... par le ruisseau."]],
@@ -152,10 +158,12 @@ const DIALOGUES = {
     chien: [
       [['Groloup', "Le chien du voisin m'a couru après sur un mille!"], ['Didi', "Pauvre toi! Il veut juste jouer, tu sais."]],
       [['Didi', "T'as un bout de pantalon déchiré!"], ['Groloup', "Un chien voulait un souvenir de moi."]],
+      [['Groloup', "Le chien des voisins m'a escorté jusqu'à ta barrière."], ['Didi', "Escorté, ou poursuivi?"], ['Groloup', "...Escorté vite."]],
     ],
     oiseau: [
       [['Groloup', "Un oiseau m'a foncé dedans dans la côte!"], ['Didi', "Il devait être pressé de te voir, lui aussi!"]],
       [['Didi', "T'as des plumes sur ton chandail!"], ['Groloup', "Un oiseau pis moi, on voulait la même place dans le ciel."]],
+      [['Groloup', "Une perdrix m'a fait peur dans la côte!"], ['Didi', "Pis toi, tu lui as fait peur?"], ['Groloup', "On a crié pareil tous les deux!"]],
     ],
     vache: [
       [['Groloup', "Une vache a refusé de se tasser."], ['Didi', "Les vaches du rang ont la tête dure!"]],
@@ -199,6 +207,7 @@ const DIALOGUES = {
     [['Didi', "C'est le plus beau bouquet que j'ai jamais eu!"], ['Groloup', "Attends de voir celui de la prochaine fois!"]],
     [['Didi', "Je vais en mettre dans toutes les pièces!"], ['Groloup', "Même dans le poulailler?"]],
     { l: [['Didi', "Ça va sentir bon jusque dans la cuisine!"], ['Groloup', "Plus fort que ta tarte aux pommes?"]], sauf: 'pommes' },
+    [['Didi', "Mon doux, je te vois même plus en arrière!"], ['Groloup', "C'est moi, en dessous des marguerites!"]],
   ],
   bouquet: [
     [['Groloup', "Tiens, je t'ai cueilli des fleurs."], ['Didi', "Merci! Je vais les mettre sur la table de la cuisine."]],
@@ -211,6 +220,7 @@ const DIALOGUES = {
     [['Groloup', "Des belles fleurs pour une belle créature!"], ['Didi', "Arrête, tu me fais rougir!"]],
     { l: [['Didi', "Juste ça? C'pas yabe, ton bouquet..."], ['Groloup', "C'est pas la grosseur qui compte, c'est l'intention!"]], si: 'peu' },
     [['Didi', "Wow! Sont belles, ces fleurs-là!"], ['Groloup', "Oui, ce sont des jacinthes."], ['Didi', "Jacinthe? C'est un beau nom!"]],
+    [['Didi', "Des pissenlits?"], ['Groloup', "Des petits soleils! Ils poussent juste pour toi."]],
   ],
   pasDeFleurs: [
     [['Didi', "Pas de fleurs {auj}?"], ['Groloup', "Je les ai oubliées... sur le bord du chemin."]],
@@ -220,6 +230,8 @@ const DIALOGUES = {
     [['Groloup', "J'ai pas de fleurs... mais j'ai mon plus beau sourire!"], ['Didi', "Ton sourire va faire l'affaire."]],
     [['Didi', "Les marguerites étaient en congé?"], ['Groloup', "Elles ont pris leur journée!"]],
     [['Didi', "T'as rien pour moi?"], ['Groloup', "Rdjien pantoute... Les fleurs dormaient encore!"]],
+    [['Didi', "Pas de fleurs {auj}?"], ['Groloup', "Les vaches ont passé avant moi. Elles ont tout mangé!"]],
+    [['Didi', "T'as les mains vides!"], ['Groloup', "Mais j'ai une belle roche! ...Elle va durer plus longtemps."]],
   ],
   // au revoir après l'intermède: Didi parle selon son humeur, Groloup lui répond
   depart: [
@@ -230,6 +242,7 @@ const DIALOGUES = {
       [['Didi', "Je te trouve... correct."], ['Groloup', "Correct! Je vais m'en souvenir longtemps!"]],
       [['Didi', "Tu reviendras... peut-être."], ['Groloup', "Peut-être, c'est mieux que non!"]],
       [['Didi', "Je vais y penser."], ['Groloup', "Penses-y fort! Bye, Didi!"]],
+      [['Didi', "Bon. Ben... bonne route."], ['Groloup', "« Bonne route »! C'est un début!"]],
     ],
     [
       [['Didi', "T'es pas pire, Groloup. Pas pire pantoute."], ['Groloup', "Pas pire pantoute! Je l'écris dans mon calepin!"]],
@@ -304,6 +317,7 @@ const SKETCHS = [
   [['Didi', "Mon père m'a demandé de chauffer la truie."], ['Groloup', "Laisse faire, je m'en occupe! Je suis le roi du bois de chauffage."]],
   [['Didi', "Ton bicycle, c'est pas vargeux."], ['Groloup', "Il est vieux, mais il monte le rang 14 pareil!"]],
   [['Groloup', "En montant, j'ai vu un djèvre pis un djibou!"], ['Didi', "Pis moi, j'ai vu un Groloup."]],
+  [['Groloup', "J'ai feuilleté le catalogue Sears."], ['Didi', "Pour quoi faire?"], ['Groloup', "Pour regarder les bagues... euh, les outils!"]],
 ];
 
 // Scénarios de visite (un par visite, sans répétition)
@@ -360,6 +374,7 @@ const REMARQUES = {
   bleuets: [
     ["Pas trop d'ours sur la route?", st => st.causes.ours ? "Un ou deux... ils voulaient mes bleuets!" : "Pas un! Ils étaient trop occupés à manger."],
     ["T'as les doigts tout bleus!", "J'ai goûté aux bleuets... juste un peu."],
+    ["T'as la bouche toute bleue!", "J'ai fait un test de qualité. Ils sont bons cette année!"],
     ["Les bleuets sont mûrs, hein?", st => st.causes.ours ? "Oui! Les ours sont d'accord avec toi." : "Oui! Je t'en ai même gardé... un."],
   ],
   chiens: [
@@ -3084,6 +3099,7 @@ const INTERMEDES = {
     [['Groloup', "Les étoiles sont belles à soir."], ['Didi', "Chut... écoute la guitare pis le feu."]],
     [['Didi', "Veux-tu chanter avec moi?"], ['Groloup', "Je chante comme une corneille..."], ['Didi', "Les corneilles aussi ont le droit de chanter!"]],
     { l: CHANSON_DIDI, min: 35 },
+    [['Groloup', "Regarde, une étoile filante!"], ['Didi', "As-tu fait un voeu?"], ['Groloup', "Oui... pis je pense qu'il est assis à côté de moi."]],
   ] },
   portrait: { titre: 'Le portrait', scenes: [
     [['Didi', "Bouge pas! Je fais ton portrait."], ['Groloup', "...Ça achève? Ça fait une heure, j'ai une crampe."], ['Didi', "Voilà! T'aimes ça?"], ['Groloup', "Wow... j'ai l'air d'un vrai monsieur!"]],
@@ -3114,6 +3130,7 @@ const INTERMEDES = {
     [['Didi', "Regarde! J'ai fait un tableau avec les fleurs que tu m'as apportées."], ['Groloup', "Toutes?"], ['Didi', "Les {N} fleurs, une par une!"]],
     [['Didi', "Ça fait {N} fleurs que tu m'apportes!"], ['Groloup', "Faudrait que je commence à apporter des pots!"]],
     [['Didi', "J'ai encadré tes fleurs. Ça fait un vrai tableau!"], ['Groloup', "On dirait un champ du rang 14... en plus beau."]],
+    [['Didi', "Avec tes {N} fleurs, je pourrais ouvrir une boutique!"], ['Groloup', "Pis moi, je serais ton meilleur fournisseur!"]],
   ] },
   galerie: { titre: 'Sur la galerie', scenes: SKETCHS },
   lac: { titre: 'Au bord du lac', scenes: [
