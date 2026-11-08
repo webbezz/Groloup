@@ -96,62 +96,172 @@ const HUMEUR = [
 ];
 function humeur(a) { let h = HUMEUR[0][1]; for (const [s, n] of HUMEUR) if (a >= s) h = n; return h; }
 
+// Répliques de l'arrivée chez Didi. Une ÉCHANGE = liste de [qui, texte] qui se répondent.
+// Options possibles sur un échange: { l: [...], jour/soir: true, sauf: 'idEvenement', si: 'encore', min: n }
+// {auj} devient « aujourd'hui » le jour et « à soir » le soir.
 // Toutes les répliques sont piochées SANS REMISE: aucune répétition dans une même partie.
 const DIALOGUES = {
   premier: ["Bonjour Didi! Je passais dans le coin... par hasard.", "Bonjour! Euh... belle journée pour une ride de bicycle, hein?",
     "Bonjour Didi! Je m'appelle Groloup. Ben... tu le savais."],
-  salut: ["Salut Didi! Je passais dans le coin...", "Bonsoir Didi! Belle soirée pour une ride de bicycle!",
-    "Didi! C'est encore moi!", "J'ai monté le rang 14 juste pour toi!", "Allô Didi! As-tu deux minutes?",
-    "Bonjour mademoiselle Didi! Ton chevalier est arrivé!", "Me revoilà! Le rang 14 a pas eu raison de moi!",
-    "Coucou Didi! Devine qui a pédalé jusqu'ici?", "Salut! J'ai pris le chemin le plus court... y en a juste un.",
-    "Bonjour Didi! J'ai mis ma plus belle chemise.", "Allô! J'ai battu mon record dans la grosse côte!",
-    "Bonsoir! Je t'ai apporté mon plus beau sourire.",
-    [['Groloup', "Ton père est-tu là?"], ['Didi', "Non, il est au bois."], ['Groloup', "Ouf! Je voulais pas repartir avec du plomb dans les fesses."]]],
-  bobos: ["J'ai eu... quelques petits accidents en chemin.", "Fais pas attention à mes bobos...",
-    "Flûte que les ours sont tannants aujourd'hui!", "J'ai rencontré le fossé. Deux fois.",
-    "Mon bicycle a décidé de faire à sa tête aujourd'hui.", "Ouf... le rang 14 m'a donné du fil à retordre!",
-    "Le fossé pis moi, on est rendus des amis.", "J'ai fait un petit détour... par le fossé."],
-  mouffette: ["Hmm... t'as un nouveau parfum?", "Oh! T'as rencontré une mouffette, toi!",
-    "Reste en bas de la galerie... t'as une petite odeur!", "Je pense qu'on va jaser de loin aujourd'hui!",
-    "Ça sent... l'aventure!", "On va te laisser prendre l'air un peu!", "Hmm... ton odeur est... spéciale aujourd'hui!", "T'as pris un raccourci par le bois, toi?",
-    "Hmm... je vais ouvrir les fenêtres."],
-  pets: ["J'ai entendu un drôle de bruit dans la côte...", "T'as mangé trop de bleuets, toi!",
-    "Y a-tu un orage? J'ai entendu le tonnerre!", "Ton bicycle a un nouveau moteur?", "T'avais le vent dans le dos aujourd'hui!",
-    "Les vaches se demandent encore c'était quoi, ce bruit-là!"],
-  pasDeFleurs: ["Pas de fleurs aujourd'hui?", "T'arrives les mains vides?", "Les fleurs étaient fermées aujourd'hui?",
-    "Pas de bouquet? Je vais m'en souvenir!", "Pas de fleurs? Ton sourire va faire l'affaire.",
-    "Les marguerites étaient en congé?"],
-  grosBouquet: ["Tout un bouquet! As-tu cueilli tout le rang?", "Wow! Il va me falloir un plus gros vase!",
-    "Il reste-tu des fleurs dans les champs?", "C'est le plus beau bouquet que j'ai jamais eu!",
-    "Mon doux! T'as dévalisé les champs!", "Ça sent bon jusque dans la cuisine!", "Je vais en mettre dans toutes les pièces!"],
-  bouquet: ["Merci pour les fleurs.", "C'est des marguerites? C'est fin.", "Je vais les mettre sur la table de la cuisine.",
-    "Des fleurs des champs! Mes préférées.", "T'es ben attentionné, toi.", "Elles sont belles! Elles sentent bon.",
-    "Encore des fleurs? Tu me gâtes!", "Je vais en faire sécher une dans mon livre.",
-    [['Didi', "Wow! Sont belles, ces fleurs-là!"], ['Groloup', "Oui, ce sont des jacinthes."], ['Didi', "Jacinthe? C'est un beau nom!"]]],
-  retard: ["T'es en retard! La limonade a eu le temps de se réchauffer.", "J'ai attendu longtemps, tu sais.",
-    "Je pensais que t'avais crevé un pneu!", "Mon horloge dit que t'es en retard...", "J'ai eu le temps de lire tout le journal!",
-    "J'ai eu le temps de tricoter une mitaine!", "Je commençais à m'inquiéter!", "Le soleil a eu le temps de bouger!"],
-  vite: ["Déjà? T'as même pas pris le temps de te peigner!", "T'es arrivé vite! T'as un moteur?",
-    "Wow! T'as volé jusqu'ici?", "T'as même pas l'air essoufflé!", "T'as pédalé comme le vent!",
-    "T'as pris un raccourci?", "Le facteur est moins vite que toi!", "Déjà là? J'avais pas fini de me coiffer!"],
-  humeur: [
-    ["Bon... tu peux t'asseoir sur la galerie. Cinq minutes.", "Hmm. On verra.", "T'es ben persévérant, toi.",
-      "Je te trouve... correct.", "Tu reviendras... peut-être.", "On jasera une autre fois.",
-      "Merci d'être venu. C'est... gentil.", "Je vais y penser."],
-    ["T'es pas pire, Groloup. Pas pire pantoute.", "Reviens jeudi, si tu veux...", "Tu me fais rire, toi.",
-      "J'aime ça quand tu passes.", "T'es pas comme les autres gars du rang.", "Ta visite me fait plaisir.",
-      "T'es drôle, toi, tu sais.", "Reviens quand tu veux... ben, pas trop tard."],
-    ["T'es pas mal fin, toi...", "J'avais hâte que tu arrives.", "Tu reviens demain?", "Je pensais à toi justement!",
-      "On va-tu marcher jusqu'au bout du rang?", "Je pense souvent à toi, tu sais.", "Fais attention à toi dans la côte!",
-      "Mon coeur fait des petits sauts quand t'arrives."],
-    ["Groloup... t'es le plus fin du rang 14.", "Tu sais que je t'aime bien, hein?", "J'attends toujours tes visites.",
-      "T'as volé mon coeur, Groloup.", "Avec toi, j'irais au bout du monde... à bicycle!", "Je voudrais te voir tous les jours.",
-      "Mon beau Groloup...", "Je serais pas capable de me passer de toi."],
+  salut: [
+    { l: [['Groloup', "Bonjour Didi! Belle journée pour une ride de bicycle!"]], jour: true },
+    { l: [['Groloup', "Bonjour mademoiselle Didi! Ton chevalier est arrivé!"]], jour: true },
+    { l: [['Groloup', "Bonjour Didi! J'ai mis ma plus belle chemise."]], jour: true },
+    { l: [['Groloup', "Bonsoir Didi! Belle soirée pour une ride de bicycle!"]], soir: true },
+    { l: [['Groloup', "Bonsoir! Je t'ai apporté mon plus beau sourire."]], soir: true },
+    { l: [['Groloup', "Bonsoir Didi! Les étoiles m'ont montré le chemin."]], soir: true },
+    [['Groloup', "Salut Didi! Je passais dans le coin..."]],
+    [['Groloup', "Didi! C'est encore moi!"]],
+    [['Groloup', "J'ai monté le rang 14 juste pour toi!"]],
+    [['Groloup', "Me revoilà! Le rang 14 a pas eu raison de moi!"]],
+    [['Groloup', "Coucou Didi! Devine qui vient de monter le rang 14... Moi!"]],
+    [['Groloup', "Salut! J'ai pris le chemin le plus court... y en a juste un."]],
+    [['Groloup', "Ton père est-tu là?"], ['Didi', "Non, il est au bois."], ['Groloup', "Ouf! Je voulais pas repartir avec du plomb dans les fesses."]],
   ],
-  aurevoir: ["Je reviens bientôt!", "À la prochaine, Didi!", "Promis, la prochaine fois j'évite les ours!",
-    "Bonne soirée, Didi!", "Je vais rêver à toi!", "À demain... si mes mollets veulent!", "On se revoit dimanche!",
-    "Bye Didi! La côte m'attend... en descendant!"],
+  mouffette: [
+    [['Didi', "Hmm... t'as un nouveau parfum?"], ['Groloup', "Eau de mouffette. C'est la grosse mode."]],
+    [['Didi', "Oh! T'as rencontré une mouffette, toi!"], ['Groloup', "On s'est pas entendus sur qui passait en premier."]],
+    [['Didi', "Reste en bas de la galerie... t'as une petite odeur!"], ['Groloup', "Je vais te parler plus fort, d'abord!"]],
+    [['Didi', "Ça sent... l'aventure!"], ['Groloup', "L'aventure, pis un peu la mouffette."]],
+    [['Didi', "Hmm... ton odeur est... spéciale {auj}!"], ['Groloup', "Une mouffette m'a fait un câlin en chemin."]],
+    [['Didi', "Hmm... je vais ouvrir les fenêtres."], ['Groloup', "Ouvre la porte aussi, tant qu'à y être."]],
+    [['Didi', "T'as pris un raccourci par le bois, toi?"], ['Groloup', "Oui... pis j'ai croisé une mouffette de mauvaise humeur."]],
+    [['Didi', "Je pense qu'on va jaser de loin {auj}!"], ['Groloup', "Je te comprends. Moi-même, je me tiens loin de moi!"]],
+  ],
+  pets: [
+    [['Didi', "J'ai entendu un drôle de bruit dans la côte..."], ['Groloup', "Euh... c'était le vent!"]],
+    [['Didi', "T'as mangé trop de bleuets, toi!"], ['Groloup', "Juste un casseau... ou deux... ou trois."]],
+    [['Didi', "Y a-tu un orage? J'ai entendu le tonnerre!"], ['Groloup', "Non, non! C'est juste le vent qui m'a poussé."]],
+    [['Didi', "Ton bicycle a un nouveau moteur?"], ['Groloup', "Oui! Un moteur aux bleuets!"]],
+    [['Didi', "T'avais le vent dans le dos {auj}!"], ['Groloup', "Un vent maison, fait avec des bleuets!"]],
+    [['Didi', "Les vaches se demandent encore c'était quoi, ce bruit-là!"], ['Groloup', "Moi aussi... moi aussi."]],
+  ],
+  // bobos: selon ce qui l'a fait tomber le plus souvent
+  bobos: {
+    ours: [
+      [['Groloup', "Flûte que les ours sont tannants {auj}!"], ['Didi', "Un ours?! T'es-tu correct?"], ['Groloup', "Oui, oui. Il voulait juste mes bleuets."]],
+      [['Groloup', "Un ours m'a pris pour son pique-nique!"], ['Didi', "Mon doux! Viens t'asseoir, tu trembles!"]],
+    ],
+    eau: [
+      [['Didi', "T'es tout mouillé jusqu'aux genoux!"], ['Groloup', "J'ai fait un petit détour... par le ruisseau."]],
+      { l: [['Groloup', "J'ai rencontré le ruisseau. Deux fois."], ['Didi', "Il t'aime, on dirait!"]], min: 2 },
+      [['Groloup', "Le ruisseau pis moi, on est rendus des amis."], ['Didi', "Sèche-toi avant de rentrer, d'abord!"]],
+    ],
+    chien: [
+      [['Groloup', "Le chien du voisin m'a couru après sur un mille!"], ['Didi', "Pauvre toi! Il veut juste jouer, tu sais."]],
+      [['Didi', "T'as un bout de pantalon déchiré!"], ['Groloup', "Un chien voulait un souvenir de moi."]],
+    ],
+    oiseau: [
+      [['Groloup', "Un oiseau m'a foncé dedans dans la côte!"], ['Didi', "Il devait être pressé de te voir, lui aussi!"]],
+      [['Didi', "T'as des plumes sur ton chandail!"], ['Groloup', "Un oiseau pis moi, on voulait la même place dans le ciel."]],
+    ],
+    vache: [
+      [['Groloup', "Une vache a refusé de se tasser."], ['Didi', "Les vaches du rang ont la tête dure!"]],
+      [['Didi', "T'as du poil de vache sur ton pantalon!"], ['Groloup', "Une vache pis moi, on s'est rencontrés de proche."]],
+    ],
+    autre: [
+      [['Groloup', "J'ai eu... quelques petits accidents en chemin."], ['Didi', "Mon doux! T'as des bleus partout!"]],
+      [['Groloup', "Mon bicycle a décidé de faire à sa tête {auj}."], ['Didi', "Ton bicycle, ou son pilote?"]],
+      [['Groloup', "Ouf... le rang 14 m'a donné du fil à retordre!"], ['Didi', "Assieds-toi, je vais te chercher un verre d'eau."]],
+      [['Groloup', "Fais pas attention à mes bobos..."], ['Didi', "Je vais quand même te mettre un pansement!"]],
+      [['Didi', "Qu'est-ce qui t'est arrivé? T'es tout poqué!"], ['Groloup', "Le rang 14 pis moi, on s'est chicanés."]],
+    ],
+  },
+  retard: [
+    { l: [['Didi', "T'es en retard! La limonade a eu le temps de se réchauffer."], ['Groloup', "C'est pas grave, je l'aime tiède!"]], sauf: 'chaleur' },
+    [['Didi', "J'ai attendu longtemps, tu sais."], ['Groloup', "Excuse-moi! La côte était longue en flûte!"]],
+    [['Didi', "Je pensais que t'avais crevé un pneu!"], ['Groloup', "Non, non... juste mes mollets."]],
+    [['Didi', "Mon horloge dit que t'es en retard..."], ['Groloup', "Ton horloge avance, c'est certain!"]],
+    [['Didi', "J'ai eu le temps de lire tout le journal!"], ['Groloup', "Pis? Y avait-tu des nouvelles du rang 14?"]],
+    [['Didi', "J'ai eu le temps de tricoter une mitaine!"], ['Groloup', "La prochaine fois, j'arrive avant que tu finisses l'autre!"]],
+    [['Didi', "Je commençais à m'inquiéter!"], ['Groloup', "Inquiète-toi pas, je finis toujours par arriver!"]],
+    { l: [['Didi', "Le soleil a eu le temps de bouger!"], ['Groloup', "Moi aussi, j'ai bougé... tranquillement."]], jour: true },
+    { l: [['Didi', "La lune a eu le temps de se lever!"], ['Groloup', "Je voulais arriver en même temps qu'elle!"]], soir: true },
+  ],
+  vite: [
+    [['Groloup', "J'ai battu mon record dans la grosse côte!"], ['Didi', "Ça paraît! T'as pédalé comme le vent!"]],
+    [['Didi', "Déjà? T'as même pas pris le temps de te peigner!"], ['Groloup', "J'avais trop hâte de te voir!"]],
+    [['Didi', "T'es arrivé vite! T'as un moteur?"], ['Groloup', "Deux mollets pis un gros coeur!"]],
+    [['Didi', "Wow! T'as volé jusqu'ici?"], ['Groloup', "Presque! J'ai touché le chemin juste deux ou trois fois."]],
+    [['Didi', "Déjà là? J'avais pas fini de me coiffer!"], ['Groloup', "T'es belle pareil!"]],
+    [['Didi', "Le facteur est moins vite que toi!"], ['Groloup', "Le facteur vient pas voir la plus belle du rang!"]],
+    [['Didi', "T'as même pas l'air essoufflé!"], ['Groloup', "Je cache bien mon jeu... pouf... pouf..."]],
+  ],
+  grosBouquet: [
+    [['Groloup', "Tiens, Didi. C'est pour toi."], ['Didi', "Tout un bouquet! As-tu cueilli tout le rang?"]],
+    [['Didi', "Mon doux! T'as dévalisé les champs!"], ['Groloup', "Les vaches vont devoir se contenter du foin!"]],
+    [['Didi', "Wow! Il va me falloir un plus gros vase!"], ['Groloup', "Prends la chaudière à lait!"]],
+    [['Didi', "Il reste-tu des fleurs dans les champs?"], ['Groloup', "J'en ai laissé quelques-unes pour la prochaine fois."]],
+    [['Didi', "C'est le plus beau bouquet que j'ai jamais eu!"], ['Groloup', "Attends de voir celui de la prochaine fois!"]],
+    [['Didi', "Je vais en mettre dans toutes les pièces!"], ['Groloup', "Même dans le poulailler?"]],
+    [['Didi', "Ça va sentir bon jusque dans la cuisine!"], ['Groloup', "Plus fort que ta tarte aux pommes?"]],
+  ],
+  bouquet: [
+    [['Groloup', "Tiens, je t'ai cueilli des fleurs."], ['Didi', "Merci! Je vais les mettre sur la table de la cuisine."]],
+    [['Didi', "Des fleurs des champs! Mes préférées."], ['Groloup', "Je le savais!"]],
+    [['Didi', "C'est des marguerites? C'est fin."], ['Groloup', "Des marguerites pour la plus belle fleur du rang!"]],
+    [['Didi', "T'es ben attentionné, toi."], ['Groloup', "Juste avec toi, Didi."]],
+    [['Didi', "Elles sont belles! Elles sentent bon."], ['Groloup', "Presque autant que toi."]],
+    [['Didi', "Je vais en faire sécher une dans mon livre."], ['Groloup', "Une page juste pour moi?"]],
+    { l: [['Didi', "Encore des fleurs? Tu me gâtes!"], ['Groloup', "T'en mérites un champ au complet."]], si: 'encore' },
+    [['Didi', "Wow! Sont belles, ces fleurs-là!"], ['Groloup', "Oui, ce sont des jacinthes."], ['Didi', "Jacinthe? C'est un beau nom!"]],
+  ],
+  pasDeFleurs: [
+    [['Didi', "Pas de fleurs {auj}?"], ['Groloup', "Je les ai oubliées... sur le bord du chemin."]],
+    [['Didi', "T'arrives les mains vides?"], ['Groloup', "Les mains vides, mais le coeur plein!"]],
+    [['Didi', "Les fleurs étaient fermées {auj}?"], ['Groloup', "Elles dormaient. J'ai pas voulu les réveiller."]],
+    [['Didi', "Pas de bouquet? Je vais m'en souvenir!"], ['Groloup', "La prochaine fois, je t'en apporte deux!"]],
+    [['Groloup', "J'ai pas de fleurs... mais j'ai mon plus beau sourire!"], ['Didi', "Ton sourire va faire l'affaire."]],
+    [['Didi', "Les marguerites étaient en congé?"], ['Groloup', "Elles ont pris leur journée!"]],
+  ],
+  // au revoir après l'intermède: Didi parle selon son humeur, Groloup lui répond
+  depart: [
+    [
+      [['Didi', "Bon... merci d'être venu. C'est... gentil."], ['Groloup', "Je reviens bientôt! ...Si tu veux."]],
+      [['Didi', "Hmm. On verra."], ['Groloup', "« On verra »! C'est presque un oui!"]],
+      [['Didi', "T'es ben persévérant, toi."], ['Groloup', "Têtu, tu veux dire! À la prochaine, Didi!"]],
+      [['Didi', "Je te trouve... correct."], ['Groloup', "Correct! Je vais m'en souvenir longtemps!"]],
+      [['Didi', "Tu reviendras... peut-être."], ['Groloup', "Peut-être, c'est mieux que non!"]],
+      [['Didi', "Je vais y penser."], ['Groloup', "Penses-y fort! Bye, Didi!"]],
+    ],
+    [
+      [['Didi', "T'es pas pire, Groloup. Pas pire pantoute."], ['Groloup', "Pas pire pantoute! Je l'écris dans mon calepin!"]],
+      [['Didi', "Reviens jeudi, si tu veux..."], ['Groloup', "Jeudi! Je vais être là avant le souper!"]],
+      [['Didi', "Tu me fais rire, toi."], ['Groloup', "Attends de voir ma prochaine visite!"]],
+      [['Didi', "J'aime ça quand tu passes."], ['Groloup', "Moi aussi! Je reviens bientôt!"]],
+      [['Didi', "T'es pas comme les autres gars du rang."], ['Groloup', "Les autres ont pas un beau bicycle rouge!"]],
+      [['Didi', "Reviens quand tu veux... ben, pas trop tard."], ['Groloup', "Promis! Avant que les poules se couchent."]],
+    ],
+    [
+      [['Didi', "T'es pas mal fin, toi..."], ['Groloup', "Toi aussi, Didi. À bientôt!"]],
+      [['Didi', "Tu reviens demain?"], ['Groloup', "Demain, si mes mollets veulent!"]],
+      [['Didi', "La prochaine fois, on va marcher jusqu'au bout du rang?"], ['Groloup', "Avec plaisir! Je vais même laisser mon bicycle."]],
+      [['Didi', "Je pense souvent à toi, tu sais."], ['Groloup', "Pis moi, je pense à toi tout le long de la côte!"]],
+      [['Didi', "Fais attention à toi dans la côte!"], ['Groloup', "Promis! Je vais éviter les ours."]],
+      [['Didi', "Mon coeur fait des petits sauts quand t'arrives."], ['Groloup', "Le mien fait des wheelies!"]],
+    ],
+    [
+      [['Didi', "Groloup... t'es le plus fin du rang 14."], ['Groloup', "Pis toi, la plus belle!"]],
+      [['Didi', "Tu sais que je t'aime bien, hein?"], ['Groloup', "Je le sais... pis c'est pareil pour moi!"]],
+      [['Didi', "J'attends toujours tes visites."], ['Groloup', "Je vais rêver à toi jusqu'à la prochaine!"]],
+      [['Didi', "T'as volé mon coeur, Groloup."], ['Groloup', "Je vais en prendre bien soin!"]],
+      [['Didi', "Avec toi, j'irais au bout du monde... à bicycle!"], ['Groloup', "On commence par le bout du rang!"]],
+      [['Didi', "Je voudrais te voir tous les jours."], ['Groloup', "Ça tombe bien, j'aime ça pédaler!"]],
+      [['Didi', "Mon beau Groloup..."], ['Groloup', "Ma belle Didi..."]],
+    ],
+  ],
 };
+// un échange peut être une simple liste ou un objet avec options
+function lignesDe(x) { return Array.isArray(x) ? x : x.l; }
+function echangeOk(x, ctx) {
+  if (Array.isArray(x)) return true;
+  if (x.jour && ctx.soir) return false;
+  if (x.soir && !ctx.soir) return false;
+  if (x.sauf && ctx.evenement === x.sauf) return false;
+  if (x.si === 'encore' && !ctx.encore) return false;
+  if (x.min && (ctx.nb || 0) < x.min) return false;
+  return true;
+}
 
 // Idées de la famille: elles sortent à coup sûr une fois par partie
 const SPECIAL = {
@@ -170,10 +280,10 @@ const SKETCHS = [
   [['Didi', "T'as les joues rouges!"], ['Groloup', "C'est la côte... Ben... c'est un peu toi aussi."]],
   [['Groloup', "Mon bicycle a un nom maintenant."], ['Didi', "Ah oui? Lequel?"], ['Groloup', "L'Express du rang 14!"]],
   [['Didi', "Veux-tu rester pour souper?"], ['Groloup', "Si c'est du pâté chinois, je reste jusqu'à dimanche!"]],
-  [['Groloup', "Un oiseau m'a pris pour une branche."], ['Didi', "Il avait bon goût!"]],
-  [['Didi', "Ton pneu a l'air dégonflé."], ['Groloup', "C'est mon coeur qui prend toute la place!"]],
+  [['Groloup', "Un oiseau m'a pris pour une branche."], ['Didi', "C'est pour ça que t'as une plume dans les cheveux?"]],
+  [['Didi', "Ton pneu a l'air dégonflé."], ['Groloup', "Lui aussi, il a trouvé la côte longue!"]],
   [['Groloup', "Une partie de 500 sur la galerie?"], ['Didi', "Prépare-toi à perdre!"]],
-  [['Groloup', "Regarde, j'ai ciré mes souliers!"], ['Didi', "...Avant de pédaler dans la boue?"]],
+  [['Groloup', "Regarde, j'ai ciré mes souliers!"], ['Didi', "Ils devaient être beaux... avant la boue du rang!"]],
   [['Didi', "On se voit à la messe dimanche?"], ['Groloup', "Promis! Je vais même arriver en avance."]],
   [['Groloup', "Sais-tu ce qui est plus beau qu'un coucher de soleil?"], ['Didi', "Non?"], ['Groloup', "Toi. Pis la descente du rang 14."]],
   [['Didi', "Qu'est-ce que tu fais demain?"], ['Groloup', "Je monte le rang 14. Comme d'habitude!"]],
@@ -187,23 +297,26 @@ const EVENEMENTS = [
   { id: 'calme', nom: 'Belle journée tranquille', intro: 'Pas un nuage, pas un ours en vue... en principe.',
     poids: { ours: .6, oiseau: .6, chien: .6, mouffette: .6 } },
   { id: 'vent', nom: 'Vent de face!', intro: 'Le vent souffle fort sur le rang 14. Ça va forcer!',
-    mods: { pedal: .88 }, ambient: 'vent', didi: "T'as les cheveux tout mêlés!" },
+    mods: { pedal: .88 }, ambient: 'vent', didi: "T'as les cheveux tout mêlés!", rep: "Le vent m'a coiffé à sa manière." },
   { id: 'chaleur', nom: 'Canicule!', intro: 'Il fait chaud! Le souffle part plus vite. Mange des pommes!',
-    mods: { drain: 1.3 }, poids: { pommier: 1.8 }, didi: "T'es rouge comme une tomate! Veux-tu de la limonade?", saisons: ['printemps', 'ete'] },
+    mods: { drain: 1.3 }, poids: { pommier: 1.8 }, didi: "T'es rouge comme une tomate! Veux-tu de la limonade?", rep: "Oui! Un gros verre, s'il te plaît!", saisons: ['printemps', 'ete'] },
   { id: 'pluie', nom: 'Petite pluie', intro: 'Il pleut! Attention aux flaques de boue.',
-    poids: { boue: 2.5 }, ambient: 'pluie', didi: "T'es trempé! Je vais te chercher une serviette." },
+    poids: { boue: 2.5 }, ambient: 'pluie', didi: "T'es trempé! Je vais te chercher une serviette.", rep: "Merci! Mes bas font flouc flouc.", sujet: 'eau' },
   { id: 'bleuets', nom: 'Les bleuets sont mûrs', intro: 'Plein de bleuets pour la jauge de vent... pis plein d\'ours!',
-    poids: { ours: 2.5 }, bleuets: 2, didi: "Pas trop d'ours sur la route?", saisons: ['ete', 'automne'] },
+    poids: { ours: 2.5 }, bleuets: 2, didi: "Pas trop d'ours sur la route?", sujet: 'ours',
+    rep: st => st.causes.ours ? "Un ou deux... ils voulaient mes bleuets!" : "Pas un! Ils étaient trop occupés à manger.", saisons: ['ete', 'automne'] },
   { id: 'chiens', nom: 'Les chiens du rang sont énervés', intro: 'Tous les chiens du rang veulent courir après les bicycles!',
-    poids: { chien: 2.5 }, didi: "J'ai entendu japper jusqu'ici!" },
+    poids: { chien: 2.5 }, didi: "J'ai entendu japper jusqu'ici!", sujet: 'chien',
+    rep: st => st.causes.chien ? "C'était les chiens du rang... après moi!" : "Ils m'ont couru après, mais je suis plus vite qu'eux!" },
   { id: 'nids', nom: 'Le chemin est magané', intro: 'Le dégel a laissé des nids-de-poule partout!',
-    poids: { nid: 3 }, didi: "T'as l'air un peu secoué!" },
+    poids: { nid: 3 }, didi: "T'as l'air un peu secoué!", rep: "Le chemin a plus de trous que de chemin!" },
   { id: 'fleurs', nom: 'Les champs sont en fleurs', intro: 'Des fleurs partout! Belle occasion pour un gros bouquet.',
     poids: { fleurs: 2.2 }, saisons: ['printemps', 'ete', 'nuit'] },
   { id: 'pommes', nom: 'Le temps des pommes', intro: 'Les pommiers débordent! Le souffle sera facile à retrouver.',
-    poids: { pommier: 2.5 }, didi: "Tu sens la tarte aux pommes!", saisons: ['ete', 'automne'] },
+    poids: { pommier: 2.5 }, didi: "Tu sens la tarte aux pommes!", rep: "J'en ai croqué une ou deux en chemin.", sujet: 'odeur', saisons: ['ete', 'automne'] },
   { id: 'oiseaux', nom: 'Les oiseaux migrent', intro: "Des volées d'oiseaux traversent le rang. Garde la tête basse!",
-    poids: { oiseau: 2.2 }, didi: "Les oiseaux t'ont pas trop achalé?", saisons: ['printemps', 'automne'] },
+    poids: { oiseau: 2.2 }, didi: "Les oiseaux t'ont pas trop achalé?", sujet: 'oiseau',
+    rep: st => st.causes.oiseau ? "Un m'a foncé dedans! J'ai encore des plumes partout." : "Je me suis fait tout petit sur mon bicycle!", saisons: ['printemps', 'automne'] },
   { id: 'mouffettes', nom: 'Saison des mouffettes', intro: 'Les mouffettes se promènent... Pas de sonnette proche d\'elles!',
     poids: { mouffette: 2.5 }, saisons: ['ete', 'automne', 'nuit'] },
 ];
@@ -216,15 +329,20 @@ const TAGLINES = ["Groloup enfourche son bicycle...", "Coiffé, parfumé, prêt 
 // Pioche sans remise: chaque paquet est mélangé, puis vidé avant d'être remélangé
 function piocher(nom, arr, ok) {
   G.decks = G.decks || {}; G.derniers = G.derniers || {};
-  let d = G.decks[nom];
-  if (!d || !d.length || d.some(i => i >= arr.length)) {
-    d = arr.map((_, i) => i);
+  const melanger = () => {
+    const d = arr.map((_, i) => i);
     for (let i = d.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [d[i], d[j]] = [d[j], d[i]]; }
     if (d.length > 1 && d[0] === G.derniers[nom]) [d[0], d[1]] = [d[1], d[0]];
-    G.decks[nom] = d;
+    return (G.decks[nom] = d);
+  };
+  let d = G.decks[nom];
+  if (!d || !d.length || d.some(i => i >= arr.length)) d = melanger();
+  let k = ok ? d.findIndex(i => ok(arr[i])) : 0;
+  if (k < 0) {
+    // plus rien de convenable dans le paquet: on rebrasse tout
+    d = melanger(); k = d.findIndex(i => ok(arr[i]));
+    if (k < 0) return null;
   }
-  let k = 0;
-  if (ok) { k = d.findIndex(i => ok(arr[i])); if (k < 0) k = 0; }
   const i = d.splice(k, 1)[0];
   G.derniers[nom] = i;
   return arr[i];
@@ -1287,6 +1405,7 @@ function hurt(e) {
   if (P.inv > 0) return;
   P.inv = 1.6; P.vx = -95; P.vy = -170; P.onGround = false;
   G.stats.plantes++;
+  const cause = e && e.k ? e.k : 'autre'; G.stats.causes[cause] = (G.stats.causes[cause] || 0) + 1;
   addAmour(AMOUR.plante, P.x, P.y - 40, '-' + Math.abs(AMOUR.plante) + ' amour');
   pop(OUILLE[(Math.random() * OUILLE.length) | 0], P.x, P.y - 30, '#ffe060', 7);
   Sound.fx('aie'); G.shake = .3; vibrer(90);
@@ -1495,6 +1614,7 @@ function plouf(c) {
   badge('baignade'); vibrer(160);
   Sound.fx('plouf'); burst(P.x, P.y, 16, G.pal.waterL, 90);
   G.stats.plantes++;
+  G.stats.causes.eau = (G.stats.causes.eau || 0) + 1;
   addAmour(AMOUR.plouf, P.x, P.y - 40, '-' + Math.abs(AMOUR.plouf) + ' amour');
   pop('Plouf!', P.x, P.y - 30, '#9ad0f4', 8);
   resetPlayerAt(c.g0 - 60);
@@ -2134,7 +2254,7 @@ function startVisit() {
   G.event = G.visite === 1 ? piocher('evenements', EVENEMENTS, e => e.id === 'calme') : piocher('evenements', EVENEMENTS, e => !e.saisons || e.saisons.includes(G.saison));
   G.up = buildUp(G.visite, G.seed, G.event);
   setLevel(G.up);
-  G.stats = { fleurs: 0, plantes: 0, nids: 0, coeurs: 0, t: 0, mouffette: false, delta: 0, amourDebut: G.amour, pets: 0 };
+  G.stats = { fleurs: 0, plantes: 0, nids: 0, coeurs: 0, t: 0, mouffette: false, delta: 0, amourDebut: G.amour, pets: 0, causes: {} };
   G.parts = []; G.pops = []; G.arr = null;
   resetPlayer(G.lev.homeX + 40); P.pose = null; P.hidden = false;
   G.camX = 0; G.camY = gyAt(G.lev, P.x) - 112;
@@ -2163,24 +2283,40 @@ function startArrival() {
   }
   const L = A.lines;
   addAmour(1);
-  // 1) salutation
   G.vus = G.vus || {};
+  const ctx = { soir: G.saison === 'nuit', evenement: G.event ? G.event.id : null, encore: G.totalFleurs > 0, nb: 0 };
+  const auj = ctx.soir ? 'à soir' : "aujourd'hui";
+  const ajouter = ex => { if (ex) for (const l of lignesDe(ex)) L.push([l[0], l[1].replace('{auj}', auj)]); };
+  const tirer = (nom, pool, extra) => piocher(nom, pool, x => echangeOk(x, Object.assign({}, ctx, extra || {})));
+  // 1) salutation de Groloup
   if (G.visite === 1) L.push(['Groloup', piocher('premier', DIALOGUES.premier)]);
-  else if (st.plantes >= 3) L.push(['Groloup', piocher('bobos', DIALOGUES.bobos)]);
-  else { const r = piocher('salut', DIALOGUES.salut); if (Array.isArray(r)) for (const l of r) L.push(l); else L.push(['Groloup', r]); }
-  // 2) réaction de Didi (une seule, la plus marquante)
-  if (st.mouffette) { L.push(['Didi', piocher('mouffette', DIALOGUES.mouffette)]); A.bonus = (A.bonus || 0) - 1; }
-  else if (st.pets >= 3) L.push(['Didi', piocher('pets', DIALOGUES.pets)]);
-  else if (st.t > lev.parTime) L.push(['Didi', piocher('retard', DIALOGUES.retard)]);
-  else if (st.fleurs === 0) L.push(['Didi', piocher('pasDeFleurs', DIALOGUES.pasDeFleurs)]);
-  else if (st.fleurs >= 15) L.push(['Didi', piocher('grosBouquet', DIALOGUES.grosBouquet)]);
-  else if (st.t < lev.parTime * .7) L.push(['Didi', piocher('vite', DIALOGUES.vite)]);
-  else { const r = piocher('bouquet', DIALOGUES.bouquet); if (Array.isArray(r)) for (const l of r) L.push(l); else L.push(['Didi', r]); }
+  else ajouter(tirer('salut', DIALOGUES.salut));
+  // 2) le sujet principal de la visite (un seul, le plus marquant), en échange qui se répond
+  const causes = st.causes || {};
+  let sujet = null, ex = null;
+  if (st.mouffette) { ex = tirer('mouffette', DIALOGUES.mouffette); sujet = 'odeur'; A.bonus = (A.bonus || 0) - 1; }
+  else if (st.plantes >= 3) {
+    // ce qui l'a fait tomber le plus souvent
+    const top = Object.keys(causes).filter(k => DIALOGUES.bobos[k]).sort((x, y) => causes[y] - causes[x])[0];
+    if (top) { ex = tirer('bobos_' + top, DIALOGUES.bobos[top], { nb: causes[top] }); sujet = top; }
+    if (!ex) { ex = tirer('bobos_autre', DIALOGUES.bobos.autre); sujet = 'bobos'; }
+  }
+  else if (st.pets >= 3) ex = tirer('pets', DIALOGUES.pets);
+  else if (st.t > lev.parTime) ex = tirer('retard', DIALOGUES.retard);
+  else if (st.fleurs === 0) ex = tirer('pasDeFleurs', DIALOGUES.pasDeFleurs);
+  else if (st.fleurs >= 15) ex = tirer('grosBouquet', DIALOGUES.grosBouquet);
+  else if (st.t < lev.parTime * .7) ex = tirer('vite', DIALOGUES.vite);
+  else ex = tirer('bouquet', DIALOGUES.bouquet);
+  ajouter(ex);
+  // 3) la remarque de Didi sur la journée, avec la réponse de Groloup (sauf si on vient d'en parler)
+  const evt = G.event;
+  if (evt && evt.didi && evt.sujet !== sujet && L.length <= 4) {
+    L.push(['Didi', evt.didi]);
+    if (evt.rep) L.push(['Groloup', typeof evt.rep === 'function' ? evt.rep(st) : evt.rep]);
+  }
   if (st.fleurs >= 15) A.bonus = (A.bonus || 0) + 1;
   if (st.t < lev.parTime * .7) A.bonus = (A.bonus || 0) + 1;
   if (st.plantes === 0) A.sansFaute = true;
-  // 3) clin d'oeil au scénario de la visite
-  if (G.event && G.event.didi) L.push(['Didi', G.event.didi]);
 }
 
 function updateArrival(dt) {
@@ -2626,14 +2762,14 @@ const CHANSON_DIDI = [
 // ---------------- INTERMÈDES (petite pause entre l'aller et le retour) ----------------
 const INTERMEDES = {
   feu: { titre: 'Au bord du feu', musique: 'guitare', scenes: [
-    [['Didi', "J'ai appris une nouvelle chanson à la guitare."], ['Groloup', "Joue-la encore! ...Pis encore une fois!"]],
-    [['Didi', "Celle-là, je l'ai composée pour toi."], ['Groloup', "Pour moi? Je vais la siffler en montant la côte!"]],
+    [['Didi', "J'ai appris une nouvelle chanson à la guitare. Écoute!"], ['Groloup', "Wow! Joue-la encore! ...Pis encore une fois!"]],
+    { l: [['Didi', "Celle-là, je l'ai composée pour toi."], ['Groloup', "Pour moi? Je vais la siffler en montant la côte!"]], min: 35 },
     [['Groloup', "Les étoiles sont belles à soir."], ['Didi', "Chut... écoute la guitare pis le feu."]],
     [['Didi', "Veux-tu chanter avec moi?"], ['Groloup', "Je chante comme une corneille..."], ['Didi', "Les corneilles aussi ont le droit de chanter!"]],
-    CHANSON_DIDI,
+    { l: CHANSON_DIDI, min: 35 },
   ] },
   portrait: { titre: 'Le portrait', scenes: [
-    [['Didi', "Bouge pas! Je fais ton portrait."], ['Groloup', "Ça fait une heure que je bouge pas... j'ai une crampe."], ['Didi', "Voilà! T'aimes ça?"], ['Groloup', "Wow... j'ai l'air d'un vrai monsieur!"]],
+    [['Didi', "Bouge pas! Je fais ton portrait."], ['Groloup', "...Ça achève? Ça fait une heure, j'ai une crampe."], ['Didi', "Voilà! T'aimes ça?"], ['Groloup', "Wow... j'ai l'air d'un vrai monsieur!"]],
     [['Didi', "Souris un peu pour le portrait!"], ['Groloup', "Comme ça?"], ['Didi', "...Peut-être un petit peu moins."]],
     [['Didi', "Je vais te peindre avec ton bicycle."], ['Groloup', "Fais-moi des gros mollets, d'abord!"]],
   ] },
@@ -2661,7 +2797,7 @@ const INTERMEDES = {
   ] },
   galerie: { titre: 'Sur la galerie', scenes: SKETCHS },
   lac: { titre: 'Au bord du lac', scenes: [
-    SPECIAL.saucette,
+    { l: SPECIAL.saucette, min: 55 },
     [['Groloup', "Regarde! Je fais des ricochets!"], ['Didi', "Un... deux... plouf!"], ['Groloup', "Le lac était pas prêt."]],
     [['Didi', "Le lac est calme à soir."], ['Groloup', "Comme moi quand t'es là... ben, presque."]],
     [['Didi', "Regarde le soleil qui se couche sur le lac."], ['Groloup', "Il est beau... mais pas autant que toi."]],
@@ -2674,11 +2810,11 @@ function startIntermede() {
   const last = G.derniers && G.derniers.typeInter != null ? TYPES_INTER[G.derniers.typeInter] : null;
   const type = piocher('typeInter', TYPES_INTER, t => t !== last && !(t === 'fleurs' && nbF < 8));
   const def = INTERMEDES[type];
-  const scene = piocher('inter_' + type, def.scenes);
-  const lines = scene.map(l => [l[0], l[1].replace('{N}', nbF), l[2]]);
+  const scene = piocher('inter_' + type, def.scenes, s => !s.min || G.amour >= s.min) || def.scenes.find(s => Array.isArray(s));
+  const lines = lignesDe(scene).map(l => [l[0], l[1].replace('{N}', nbF), l[2]]);
+  // au revoir: Didi parle selon son humeur, Groloup lui répond
   const tier = G.amour < 25 ? 0 : G.amour < 55 ? 1 : G.amour < 85 ? 2 : 3;
-  lines.push(['Didi', piocher('humeur' + tier, DIALOGUES.humeur[tier])]);
-  lines.push(['Groloup', piocher('aurevoir', DIALOGUES.aurevoir)]);
+  for (const l of piocher('depart' + tier, DIALOGUES.depart[tier])) lines.push(l);
   G.inter = { type, titre: def.titre, lines, i: 0, shown: 0, t: 0 };
   setState('intermede');
   Sound.play(def.musique || 'amour');
