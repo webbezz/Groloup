@@ -7,7 +7,7 @@ Dossier sur le VPS : `/opt/groloup`
 
 Le code vit dans un dépôt GitHub; Claude y pousse les mises à jour.
 
-    git clone https://github.com/USER/groloup.git /opt/groloup
+    git clone https://github.com/webbezz/Groloup.git /opt/groloup
 
 Si le port 8076 est déjà pris : créer `/opt/groloup/.env` avec `GROLOUP_PORT=8077` (ou autre).
 
