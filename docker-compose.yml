@@ -1,0 +1,12 @@
+services:
+  groloup:
+    build: .
+    container_name: groloup
+    restart: unless-stopped
+    ports:
+      # port local changeable sans toucher au dépôt: GROLOUP_PORT=xxxx dans un fichier .env
+      - "127.0.0.1:${GROLOUP_PORT:-8076}:8000"
+    volumes:
+      - ./data:/data
+      # le jeu est lu directement du disque: un git pull suffit, sans rebuild
+      - ./static:/app/static:ro
