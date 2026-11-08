@@ -11,14 +11,14 @@ html,body{margin:0;height:100%;background:#1b1226;overflow:hidden;touch-action:n
 .ui{position:absolute;font-family:"Press Start 2P",monospace;color:#fff;border:2px solid #fff;background:rgba(40,24,56,.55);display:flex;align-items:center;justify-content:center;cursor:pointer;box-sizing:border-box}
 .small{width:34px;height:34px;font-size:12px;border-radius:6px}
 #touch{display:none}
-.tbtn{position:fixed;width:74px;height:74px;border-radius:50%;font-size:20px;background:rgba(255,255,255,.16);border:3px solid rgba(255,255,255,.75);text-shadow:0 2px 0 #000}
+.tbtn{position:fixed;width:74px;height:74px;border-radius:50%;font-size:20px;background:#2c2048;border:3px solid #fff;text-shadow:0 2px 0 #000;box-shadow:0 3px 0 #120a1e}
 #bL{left:calc(14px + env(safe-area-inset-left));bottom:calc(18px + env(safe-area-inset-bottom))}
 #bR{left:calc(102px + env(safe-area-inset-left));bottom:calc(18px + env(safe-area-inset-bottom))}
-#bJ{right:calc(16px + env(safe-area-inset-right));bottom:calc(22px + env(safe-area-inset-bottom));width:92px;height:92px;font-size:11px;background:rgba(255,120,150,.28)}
-#bB{right:calc(26px + env(safe-area-inset-right));bottom:calc(126px + env(safe-area-inset-bottom));width:62px;height:62px;background:rgba(150,130,255,.22)}
-#bB.ready{background:rgba(200,255,140,.4);box-shadow:0 0 12px rgba(200,255,140,.8)}
-#bT{right:calc(118px + env(safe-area-inset-right));bottom:calc(26px + env(safe-area-inset-bottom));width:62px;height:62px;font-size:8px;background:rgba(255,210,60,.25)}
-.tbtn.on{background:rgba(255,255,255,.45)}
+#bJ{right:calc(16px + env(safe-area-inset-right));bottom:calc(22px + env(safe-area-inset-bottom));width:92px;height:92px;font-size:11px;background:#c8325f}
+#bB{right:calc(26px + env(safe-area-inset-right));bottom:calc(126px + env(safe-area-inset-bottom));width:62px;height:62px;background:#4a3c96}
+#bB.ready{background:#3f8f3a;box-shadow:0 0 12px rgba(200,255,140,.9)}
+#bT{right:calc(118px + env(safe-area-inset-right));bottom:calc(26px + env(safe-area-inset-bottom));width:62px;height:62px;font-size:8px;background:#a87a12}
+.tbtn.on{filter:brightness(1.45);transform:translateY(2px);box-shadow:0 1px 0 #120a1e}
 #nomBox{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(16,8,28,.55);z-index:20;font-family:"Press Start 2P",monospace}
 .nomPanel{background:#1c1430;border:3px solid #fff;padding:18px 16px;max-width:92vw;text-align:center;color:#fff;box-shadow:0 8px 30px rgba(0,0,0,.6)}
 .nomTitre{font-size:11px;line-height:1.7;color:#ffe9a8;margin-bottom:14px}
@@ -1260,6 +1260,7 @@ function resetPlayer(x) {
   Object.assign(P, {
     x, y: gyAt(G.lev, x), vx: 0, vy: 0, onGround: true, inv: 0, stamina: 1, walking: false, phase: 0, angle: 0,
     coyote: 0, jumpBuf: 0, mud: false, stink: 0, nidCd: 0, bellCd: 0, maxX: x, sweatT: 0, noteT: 0, impatient: false, face: 1, ventT: 0, boostT: 0, petPuffT: 0,
+    wheelie: false, wheelieT: 0, wheelieSec: 0, wheelieA: 0,
   });
 }
 
@@ -2235,6 +2236,7 @@ function startDescent() {
 }
 
 function endVisit() {
+  P.wheelie = false; P.wheelieA = 0; P.angle = 0;
   G.totalFleurs += G.stats.fleurs;
   G.partie = Object.assign({ plantes: 0, temps: 0, par: 0, coeurs: 0, ours: 0, sansFaute: 0, wheelie: 0 }, G.partie || {});
   G.partie.plantes += G.stats.plantes; G.partie.temps += G.stats.t;
