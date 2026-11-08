@@ -1037,6 +1037,14 @@ function buildSprites() {
   const wave1 = didi.slice(); wave1[9] = 'hhsdDddDdhhs'; wave1[8] = 'hhhdwwwwdhhs'; wave1[10] = 'h.sddDdddh..';
   const wave2 = wave1.slice(); wave2[7] = 'hhh.ssss.hhs'; wave2[8] = 'hhhdwwwwdhhs'; wave2[9] = 'hhsdDddDdhh.';
   SPR.didiWave = [ascii(wave1, didiPal), ascii(wave2, didiPal)];
+  const croise = didi.slice();
+  croise[6] = '.hhssmmsshh.'; croise[9] = 'hh.dDDDDd.hh'; croise[10] = 'h..sDDDDs.h.'; croise[11] = '...dddDdd...';
+  SPR.didiBras = ascii(croise, didiPal);
+  const joie1 = didi.slice();
+  joie1[3] = 'shhsssssshhs'; joie1[4] = 'dhhsesseshhd'; joie1[5] = 'dhhcsssschhd'; joie1[6] = 'dhhswwwwshhd';
+  joie1[7] = 'dhh.ssss.hhd'; joie1[8] = 'dhhdwwwwdhhd'; joie1[9] = '.hhdDddDdhh.'; joie1[10] = '.h.ddDddd.h.'; joie1[11] = '...dddDdd...';
+  const joie2 = joie1.slice(); joie2[2] = 'shhhhHhhhhhs'; joie2[3] = 'dhhsssssshhd';
+  SPR.didiJoie = [ascii(joie1, didiPal), ascii(joie2, didiPal)];
 
   // ---- Les mariés (20 juillet 1976) ----
   const gPal = { h: '#a8582a', H: '#743818', s: '#f2c49c', e: '#2a1010', w: '#ffffff', b: '#8fb4dc', B: '#6a90bc', v: '#7ea6d0',
@@ -1880,7 +1888,17 @@ function updateParticles(dt) {
   if (G.parts.length > 400) G.parts.splice(0, G.parts.length - 400);
 }
 
+function coeursDidi(dt) {
+  const lev = G.lev;
+  if (!lev || lev.didiX == null || lev.didiX < 0 || G.amour < 85) return;
+  const vue = lev.didiX + 10 - G.camX;
+  if (vue < -10 || vue > W + 10) return;
+  if (!(G.state === 'monte' || G.state === 'descend' || (G.state === 'arrivee' && G.arr && G.arr.wave))) return;
+  G.coeurDidiT = (G.coeurDidiT || 0) - dt;
+  if (G.coeurDidiT <= 0) { G.coeurDidiT = .55 + Math.random() * .4; part('heart', lev.didiX + 16, gyAt(lev, lev.didiX) - 24, (Math.random() - .5) * 20, -26 - Math.random() * 14, 1.3); }
+}
 function ambient(dt) {
+  coeursDidi(dt);
   const a = G.pal.ambient, r = Math.random();
   const ea = G.event && G.event.ambient;
   if (ea === 'pluie') for (let i = 0; i < 4; i++) part('pluie', G.camX + Math.random() * (W + 60), G.camY - 4 + Math.random() * 20, -30, 260 + Math.random() * 60, .7);
@@ -2176,10 +2194,10 @@ function drawEntities(cx, cy) {
   }
   if (G.state === 'monte' || G.state === 'arrivee' || G.state === 'descend' || G.state === 'retour') {
     const dx = lev.didiX + 10 - cx;
-    const wave = (G.state === 'arrivee' && G.arr && G.arr.wave) || G.state === 'descend';
-    const img = wave ? SPR.didiWave[((G.t * 5) | 0) % 2] : SPR.didi;
-    const jump = G.arr && G.arr.jump ? Math.round(Math.abs(Math.sin(G.t * 9)) * -4) : 0;
-    if (dx > -20 && dx < W + 20) spr(img, dx, Math.round(gyAt(lev, lev.didiX) - cy) - 22 + jump);
+    if (dx > -20 && dx < W + 20) {
+      const { img, saut } = poseDidi();
+      spr(img, dx, Math.round(gyAt(lev, lev.didiX) - cy) - 22 + saut);
+    }
   }
   for (const e of lev.enemies) {
     if (e.gone || (e.k === 'oiseau' && !e.active)) continue;
@@ -2193,6 +2211,24 @@ function drawEntities(cx, cy) {
     else if (e.k === 'vache') spr(SPR.vache[f], X - 10, Y - 11, e.dir > 0);
     else if (e.k === 'tracteur') { if (e.fade) g.globalAlpha = Math.max(0, 1 - e.fade); spr(SPR.tracteur[f], X - 15, Y - 23); g.globalAlpha = 1; }
   }
+}
+
+// Didi montre son humeur: bras croisés (indifférente), debout ou envoie la main, saute de joie (amoureuse)
+function poseDidi() {
+  const A = G.arr, humeurNo = G.amour < 25 ? 0 : G.amour < 55 ? 1 : G.amour < 85 ? 2 : 3;
+  const f = v => ((G.t * v) | 0) % 2, saute = v => Math.round(-Math.abs(Math.sin(G.t * v)) * 3);
+  if (A && A.jump && G.state === 'arrivee') return { img: SPR.didiJoie[f(6)], saut: Math.round(-Math.abs(Math.sin(G.t * 9)) * 4) };  // la grande demande
+  const accueil = (G.state === 'arrivee' && A && A.wave) || G.state === 'descend' || G.state === 'retour';
+  const tientBouquet = G.state === 'arrivee' && A && A.don != null;
+  if (tientBouquet) return { img: SPR.didi, saut: humeurNo === 3 ? saute(5) : 0 };
+  if (humeurNo === 0) return { img: SPR.didiBras, saut: 0 };
+  if (G.state === 'monte') return humeurNo === 3 ? { img: SPR.didiJoie[f(5)], saut: saute(6) } : humeurNo === 2 ? { img: SPR.didiWave[f(4)], saut: 0 } : { img: SPR.didi, saut: 0 };
+  if (accueil) {
+    if (humeurNo === 1) return { img: SPR.didiWave[f(3)], saut: 0 };
+    if (humeurNo === 2) return { img: SPR.didiWave[f(7)], saut: 0 };
+    return { img: SPR.didiJoie[f(6)], saut: saute(7) };
+  }
+  return { img: SPR.didi, saut: 0 };
 }
 
 function drawPlayer(cx, cy) {
