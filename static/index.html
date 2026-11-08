@@ -617,6 +617,7 @@ const Sound = {
       case 'nid': this.osc('sine', 120, t, .2, .4, null, 50); this.noise(t, .12, .15, 300, 'lowpass'); break;
       case 'plouf': this.noise(t, .5, .3, 900, 'lowpass'); this.osc('sine', 600, t, .3, .15, null, 120); break;
       case 'pschit': this.noise(t, .5, .18, 3000, 'bandpass'); break;
+      case 'clic': this.noise(t, .04, .3, 5000, 'highpass'); this.osc('pulse25', 1800, t, .02, .06); this.noise(t + .07, .1, .14, 2500, 'bandpass'); break;
       case 'blip': this.osc('pulse25', 1400, t, .025, .025); break;
       case 'arrivee': [523, 659, 784, 1047, 1319].forEach((f, k) => this.osc('pulse25', f, t + k * .07, .16, .1)); break;
       case 'oui': [784, 988, 1175, 1568, 1976, 2349].forEach((f, k) => this.osc('pulse25', f, t + k * .06, .2, .09)); break;
@@ -980,6 +981,10 @@ function buildSprites() {
     '...hhhhhh...', '..hhhhhhhh..', '.hhhhhhhhhh.', '.hhsssssshh.', '.hHsessesHh.', '.hHssssssHh.', '..HsswwssH..',
     '...ssssss...', '..bBwtTwBb..', '.bbBvTtvBrb.', '.bbBvtTvBbb.', '.bbbBvvBbbb.', '.bbbbvvbbbb.', '.bbbbbbbbbb.',
     'sbbbbbbbbbbs', '..bbbbbbbb..', '..bbb..bbb..', '..bbb..bbb..', '.bbbb..bbbb.', '.bbbb..bbbb.', '.kkkk..kkkk.'], gPal);
+  { const lignes = ['...hhhhhh...', '..hhhhhhhh..', '.hhhhhhhhhh.', '.hhsssssshh.', '.hHeesseeHh.', '.hHssssssHh.', '..HsswwssH..',
+    '...ssssss...', '..bBwtTwBb..', '.bbBvTtvBrb.', '.bbBvtTvBbb.', '.bbbBvvBbbb.', '.bbbbvvbbbb.', '.bbbbbbbbbb.',
+    'sbbbbbbbbbbs', '..bbbbbbbb..', '..bbb..bbb..', '..bbb..bbb..', '.bbbb..bbbb.', '.bbbb..bbbb.', '.kkkk..kkkk.'];
+    SPR.marieYF = ascii(lignes, gPal); }
   const mPal = { f: '#ffffff', y: '#ffe9a0', h: '#9a6038', H: '#7a4424', s: '#f4c8a4', e: '#2a1010', w: '#ffffff', W: '#e2e2ec',
     r: '#d8203a', R: '#9a1028', g: '#3a8a3a', u: '#f4f4ff', v: '#eef0ff', c: '#f09a9a', m: '#b02a3a' };
   SPR.mariee = ascii([
@@ -1504,6 +1509,17 @@ function updatePlayer(dt) {
     }
   }
   P.wheelieA = approach(P.wheelieA || 0, P.wheelie ? .5 : 0, dt * (P.wheelie ? 3 : 4));
+  // wheelie devant la maison de Didi (elle est encore à l'écran): elle lui envoie un bec
+  if (P.wheelie && G.lev.down && G.state === 'descend' && !G.becVu) {
+    const dx = G.lev.didiX + 10 - G.camX;
+    if (dx > 0 && dx < W - 10) {
+      G.becVu = true; Sound.fx('coeur');
+      const bx = G.lev.didiX + 16, by = gyAt(G.lev, G.lev.didiX) - 20;
+      pop('Mwah!', bx, by - 14, '#ffb0d8', 6);
+      for (let k = 0; k < 6; k++) part('heart', bx, by, (P.x - bx) * (.6 + Math.random() * .3), -20 - Math.random() * 30, 1.4);
+      addAmour(1, P.x, P.y - 48, 'Un bec de Didi! +1');
+    }
+  }
 
   if (P.onGround) {
     if (down) {
@@ -2370,6 +2386,7 @@ function startDescent() {
   setState('descend');
   Sound.play('descente' + musicNo());
   if (G.oui) pop('Elle a dit OUI!', P.x - 60, P.y - 50, '#ffb0c8', 9);
+  G.becVu = false;
 }
 
 function endVisit() {
@@ -2518,7 +2535,7 @@ function startFinale() {
   badge('oui'); if (G.visite <= 5) badge('coupdefoudre');
   G.finEtape = null; G.monScore = null;
   fin = { scene: (() => { const [c, x] = mkCanvas(160, 90); return { c, x }; })(), flat: null,
-    off: { foyer: 0, pin: 0 }, offCur: { foyer: 0, pin: 0 }, puffs: [], msgs: [], reac: 0, vite: 0 };
+    off: { foyer: 0, pin: 0 }, offCur: { foyer: 0, pin: 0 }, puffs: [], msgs: [], reac: 0, vite: 0, yeux: { foyer: 0, pin: 0 }, flash: 0, clics: 0, chien: null };
   const flat = { L: 6000, gy: new Float32Array(6002), gap: new Uint8Array(6002), creeks: [], solids: [], zones: [], items: [], enemies: [], decor: [], cps: [], down: true, didiX: -999, homeX: 99999 };
   for (let i = 0; i < 6002; i++) flat.gy[i] = Math.sin(i / 300) * 6;
   decorate(flat, rngOf(5), null);
@@ -2553,7 +2570,7 @@ function drawWedding(x, t) {
   }
   x.fillStyle = 'rgba(80,50,30,.35)'; x.fillRect(0, 54, 160, 36);
   x.drawImage(SPR.mariee, 63 - Math.round(fin.offCur.foyer), 44);
-  x.drawImage(SPR.marie, 84, 44);
+  x.drawImage(fin.yeux.foyer > 0 ? SPR.marieYF : SPR.marie, 84, 44);
   x.drawImage(SPR.tapis, 59, 62);
 }
 // Finale en album photo: 1) devant le foyer  2) sous le grand pin  3) 50 ans plus tard
@@ -2583,6 +2600,15 @@ function ventFinale(t, T) {
 }
 const REACTIONS_DRING = ["Toujours aussi fringant, mon Groloup!", "Ça fait 50 ans que tu sonnes!", "Les voisins vont penser qu'on se remarie!",
   "Dring dring toi-même!", "T'as pas changé d'un poil!", "Garde tes deux mains sur le guidon!"];
+const CLICS = ['Groloup a fermé les yeux!', 'Encore une... les yeux fermés.', 'Le photographe soupire.', 'Celle-là sera la bonne!', 'Groloup, ouvre les yeux!'];
+function flashPhoto(t) {
+  if (t >= FIN_T.noir - .6 || (fin.dringCd || 0) > 0) return;
+  fin.dringCd = 1; fin.flash = .35; Sound.fx('dring'); setTimeout(() => Sound.fx('clic'), 160);
+  const ph = t < FIN_T.pin ? 'foyer' : 'pin';
+  fin.yeux[ph] = 2.2;
+  fin.msgs.push({ txt: 'Clic!', x: 160, y: 34, t: 0, col: '#ffffff', size: 8 });
+  fin.msgs.push({ txt: CLICS[fin.clics++ % CLICS.length], x: 160, y: 136, t: -.2, col: '#ffe9a8', size: 5 });
+}
 function sonnetteFinale(T) {
   if (T <= 0 || (fin.dringCd || 0) > 0) return;
   fin.dringCd = .9; fin.dring = (fin.dring || 0) + 1; fin.dringT = .5;
@@ -2592,11 +2618,30 @@ function sonnetteFinale(T) {
   // Didi réagit une fois sur deux; sa réplique reste en place sous le titre, sans chevaucher le texte
   if (fin.dring % 2 === 1) { fin.reac2 = REACTIONS_DRING[(fin.dring >> 1) % REACTIONS_DRING.length]; fin.reac2T = 2.2; }
   if (fin.dring >= 5) badge('fringant');
+  // le chien qui suivait en jappant se sauve
+  if (fin.chien && fin.chien.etat !== 'fuit') { fin.chien.etat = 'fuit'; fin.chien.t = 0; pop('Kaï kaï!', px + fin.chien.off, py - 16, '#ffffff', 4.5); }
+}
+// un chien du rang suit le tandem en jappant
+function majChien(dt) {
+  const px = G.camX + 140;
+  if (!fin.chien) fin.chien = { off: -260, etat: 'suit', t: 0, wouf: 1.5 };
+  const c = fin.chien; c.t += dt;
+  if (c.etat === 'suit') {
+    c.off = approach(c.off, -84 + Math.sin(G.t * 2.3) * 6, 70 * dt);
+    c.wouf -= dt;
+    if (c.wouf <= 0 && c.off > -140) { c.wouf = 2 + Math.random() * 1.5; Sound.fx('wouf'); pop('Wouf!', px + c.off, gyAt(fin.flat, px + c.off) - 16, '#ffffff', 4); }
+  } else if (c.etat === 'fuit') {
+    c.off -= 150 * dt;
+    if (c.t > 3.5) { c.etat = 'suit'; c.off = -260; c.wouf = 1.5; }
+  }
 }
 function updateFinale(dt) {
   const t = G.stateT, T = t - FIN_T.tandem;
   if (inp.boostP) ventFinale(t, T);
-  if (inp.toolP) sonnetteFinale(T);
+  if (inp.toolP) { if (T > 0) sonnetteFinale(T); else flashPhoto(t); }
+  if (fin.flash > 0) fin.flash -= dt;
+  for (const k of ['foyer', 'pin']) if (fin.yeux[k] > 0) fin.yeux[k] -= dt;
+  if (T > 0) majChien(dt);
   if (fin.dringCd > 0) fin.dringCd -= dt;
   if (fin.dringT > 0) fin.dringT -= dt;
   if (fin.reac2T > 0) fin.reac2T -= dt;
@@ -2639,6 +2684,7 @@ function canettes() {
     rect(cx, cy, 4, 5, '#b8c0c8'); rect(cx, cy, 4, 1, '#8a9098'); rect(cx + 1, cy + 2, 2, 2, ['#d8342a', '#3a7ad8', '#e8b020'][i]);
   }
 }
+function flashBlanc() { if (fin.flash > 0) { g.fillStyle = 'rgba(255,255,255,' + clamp(fin.flash / .35, 0, 1) * .85 + ')'; g.fillRect(0, 0, W, H); } }
 function cadrePhoto(legende) {
   g.fillStyle = 'rgba(255,190,140,.10)'; g.fillRect(0, 0, W, H);
   rect(0, 0, W, 7, '#f4efe2'); rect(0, 0, 7, H, '#f4efe2'); rect(W - 7, 0, 7, H, '#f4efe2'); rect(0, H - 24, W, 24, '#f4efe2');
@@ -2659,7 +2705,7 @@ function drawPin(x, t) {
   }
   sR(x, 0, 60, 160, 30, '#5e7e3c');
   for (let k = 0; k < 90; k++) P1(x, hsh(k * 11) % 160, 61 + hsh(k * 17) % 28, k % 2 ? '#7a9a4a' : '#4a6a2e');
-  x.drawImage(SPR.mariee, 66 - Math.round(fin.offCur.pin), 47); x.drawImage(SPR.marie, 80, 47);
+  x.drawImage(SPR.mariee, 66 - Math.round(fin.offCur.pin), 47); x.drawImage(fin.yeux.pin > 0 ? SPR.marieYF : SPR.marie, 80, 47);
 }
 function bouffees(x) {
   for (const p of fin.puffs) { const r = 1 + Math.round((1 - p.life / p.max) * 4); DISC(x, p.x, p.y, r, r, p.life / p.max > .5 ? 'rgba(190,220,150,.7)' : 'rgba(200,215,170,.45)'); }
@@ -2679,7 +2725,7 @@ function drawFinale() {
     g.drawImage(fin.scene.c, 0, 0, 320, 180);
     for (const p of G.parts) if (p.kind === 'heart') spr(SPR.heart, p.x - 3, p.y - 3);
     cadrePhoto('Mariage de ' + CONFIG.mariageNoms + ' le ' + CONFIG.mariageDate + ' à ' + CONFIG.mariageLieu);
-    texteFinale();
+    texteFinale(); flashBlanc();
     if (t < 1) { g.fillStyle = 'rgba(255,255,255,' + (1 - t) + ')'; g.fillRect(0, 0, W, H); }
     if (t > FIN_T.pin - .4) { g.fillStyle = 'rgba(255,255,255,' + clamp((t - FIN_T.pin + .4) / .4, 0, 1) + ')'; g.fillRect(0, 0, W, H); }
     return;
@@ -2689,7 +2735,7 @@ function drawFinale() {
     g.drawImage(fin.scene.c, 0, 0, 320, 180);
     for (const p of G.parts) if (p.kind === 'confetti') rect(p.x, p.y, 2, 2, p.col);
     cadrePhoto('Les nouveaux mariés, sous le grand pin');
-    texteFinale();
+    texteFinale(); flashBlanc();
     if (t < FIN_T.pin + .4) { g.fillStyle = 'rgba(255,255,255,' + (1 - (t - FIN_T.pin) / .4) + ')'; g.fillRect(0, 0, W, H); }
     if (t > FIN_T.noir - 1) { g.fillStyle = 'rgba(0,0,0,' + clamp(t - FIN_T.noir + 1, 0, 1) + ')'; g.fillRect(0, 0, W, H); }
     return;
@@ -2704,6 +2750,10 @@ function drawFinale() {
   const cx = Math.round(G.camX), cy = Math.round(G.camY);
   drawSky(cx, cy); drawDecor(cx, cy); drawGround(cx, cy);
   const px = G.camX + 140, py = gyAt(fin.flat, px);
+  if (fin.chien) {
+    const c = fin.chien, dx = px + c.off, f = ((G.t * 10) | 0) % 2;
+    if (dx - cx > -20) spr(SPR.chien[f], Math.round(dx - cx) - 7, Math.round(gyAt(fin.flat, dx) - cy) - 8, c.etat !== 'fuit');
+  }
   g.save(); g.translate(Math.round(px - cx), Math.round(py - cy)); g.rotate(Math.atan(slopeAt(fin.flat, px)));
   g.drawImage(SPR.tandem[((G.t * 9) | 0) % 8], -23, -36);
   canettes();
