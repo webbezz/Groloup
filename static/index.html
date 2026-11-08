@@ -2240,18 +2240,25 @@ function drawParticles(cx, cy) {
 const ZOOM_ETATS = { intro: 1, monte: 1, arrivee: 1, retour: 1, descend: 1, bilan: 1 };
 function cibleZoom() {
   const lev = G.lev;
-  if (!lev || !ZOOM_ETATS[G.state] || lev.didiX == null || lev.didiX < 0) return { z: 1, fx: P.x, fy: P.y - 30 };
+  if (!lev || !ZOOM_ETATS[G.state] || lev.didiX == null || lev.didiX < 0) return { z: 1, k: 0, fx: P.x, fy: P.y - 30, sy: H / 2 };
   const maisons = [lev.homeX - 8, lev.didiX - 4];
   const hx = Math.abs(P.x - maisons[0]) < Math.abs(P.x - maisons[1]) ? maisons[0] : maisons[1];
   const dist = Math.abs(hx - P.x);
-  const z = clamp(W / (dist + 120), 1, 2);
-  return { z, fx: (hx + P.x) / 2, fy: ((gyAt(lev, hx) - 32) + (P.y - 20)) / 2 };
+  const k = clamp(W / (dist + 120) - 1, 0, 1);           // 0 = loin, 1 = tout près de la maison
+  const fx = (hx + P.x) / 2, sol = gyAt(lev, P.x);
+  // pendant les répliques (boîte en bas): le chemin juste au-dessus de la boîte
+  if (G.state === 'arrivee') return { z: 1 + k * .5, k, fx, fy: sol, sy: 113 };
+  // sous la carte du début ou du retour (en haut): le chemin en bas de l'écran
+  if (G.state === 'intro' || G.state === 'retour') return { z: 1 + k * .6, k, fx, fy: sol, sy: 168 };
+  return { z: 1 + k, k, fx, fy: ((gyAt(lev, hx) - 32) + (P.y - 20)) / 2, sy: H / 2 + 6 };
 }
 function majZoom() {
   const c = cibleZoom(), dt = Math.min(.05, G.dtFrame || 1 / 60);
   const Z = G.zoomCur;
-  if (!Z || Z.lev !== G.lev) { G.zoomCur = { z: c.z, fx: c.fx, fy: c.fy, lev: G.lev }; return G.zoomCur; }
-  Z.z = approach(Z.z, c.z, dt * 1.6); Z.fx = lerp(Z.fx, c.fx, Math.min(1, dt * 6)); Z.fy = lerp(Z.fy, c.fy, Math.min(1, dt * 6));
+  if (!Z || Z.lev !== G.lev) { G.zoomCur = Object.assign({ lev: G.lev }, c); return G.zoomCur; }
+  const a = Math.min(1, dt * 6), b = Math.min(1, dt * 3);
+  Z.z = approach(Z.z, c.z, dt * 1.6); Z.k = approach(Z.k, c.k, dt * 1.6);
+  Z.fx = lerp(Z.fx, c.fx, a); Z.fy = lerp(Z.fy, c.fy, b); Z.sy = lerp(Z.sy, c.sy, b);
   return Z;
 }
 function drawWorld() {
@@ -2260,11 +2267,11 @@ function drawWorld() {
   const Z = majZoom();
   const zoome = Z.z > 1.01;
   if (zoome) {
-    const k = clamp((Z.z - 1) / 1, 0, 1);
+    const k = Z.k;
     const ax = Z.fx - cx, ay = Z.fy - cy;              // le point visé, à l'écran sans zoom
     // la vue zoomée reste à l'intérieur de ce que la caméra dessine (jamais de trou sur les bords)
     const tx = clamp(lerp(ax, W / 2, k), W - (W - ax) * Z.z, ax * Z.z);
-    const ty = clamp(lerp(ay, H / 2 + 6, k), H - (H - ay) * Z.z, ay * Z.z);
+    const ty = clamp(lerp(ay, Z.sy, k), H - (H - ay) * Z.z, ay * Z.z);
     g.save(); g.translate(tx, ty); g.scale(Z.z, Z.z); g.translate(-ax, -ay);
     TXT_ZOOM = { ax, ay, tx, ty, z: Z.z };
   }
@@ -2547,16 +2554,16 @@ function endVisit() {
 }
 
 // ---------- dessins des cartes ----------
-function drawCard(lines, foot) {
+function drawCard(lines, foot, enHaut) {
   TQ.length = 0;
-  g.fillStyle = 'rgba(16,8,28,.55)'; g.fillRect(0, 0, W, H);
+  g.fillStyle = enHaut ? 'rgba(16,8,28,.25)' : 'rgba(16,8,28,.55)'; g.fillRect(0, 0, W, H);
   const items = [];
   let hgt = 0;
   for (const [s, size, col] of lines) {
     for (const l of wrap(s, size, 200)) { items.push([l, size, col, hgt]); hgt += size + 5; }
     hgt += 2;
   }
-  const ph = hgt + (foot ? 26 : 16), top = Math.round((H - ph) / 2);
+  const ph = hgt + (foot ? 26 : 16), top = enHaut ? 6 : Math.round((H - ph) / 2);
   panel(50, top, 220, ph);
   for (const [l, size, col, y] of items) txt(l, 160, top + 10 + y, size, col || '#ffffff', 'center');
   if (foot && ((G.t * 2) | 0) % 2) txt(foot, 160, top + ph - 13, 4.5, '#ffd0dc', 'center');
@@ -2568,14 +2575,14 @@ function drawIntro() {
   if (G.visite === 1) L.push(['Monte jusque chez Didi, cueille des fleurs pis des bleuets!', 4.5, '#bfe4ff']);
   else L.push(['Amour: ' + Math.floor(G.amour) + '% · Didi est ' + humeur(G.amour).toLowerCase(), 4.5, '#ffb0c8']);
   if (G.pet >= PET.cout) L.push(['Jauge de vent: ' + Math.floor(G.pet) + '% · ' + Math.floor(G.pet / PET.cout) + ' boost(s) en réserve', 4, '#d8ccff']);
-  drawCard(L, touchMode ? 'Touche pour partir' : 'Entrée pour partir');
+  drawCard(L, touchMode ? 'Touche pour partir' : 'Entrée pour partir', true);
 }
 function drawRetour() {
   drawWorld(); drawHUD();
   drawCard(G.oui
     ? [['Elle a dit OUI!', 10, '#ff8aa8'], ['Groloup redescend le rang 14 en criant de joie!', 5, '#ffffff']]
     : [['Le retour', 10, '#ffffff'], ['Groloup redescend le coeur léger. Attrape les coeurs!', 5, '#ffd0dc'],
-      ['Vent + flèche arrière = wheelie!', 4.5, '#d8ccff']]);
+      ['Vent + flèche arrière = wheelie!', 4.5, '#d8ccff']], null, true);
 }
 function drawBilan() {
   drawWorld(); TQ.length = 0;
@@ -3415,7 +3422,8 @@ function render() {
     case 'intro': drawIntro(); break;
     case 'monte': case 'descend': drawWorld(); drawHUD(); break;
     case 'arrivee': {
-      drawWorld(); drawHUD();
+      // un badge s'affiche en haut pendant les répliques: la jauge se tasse le temps qu'il passe
+      drawWorld(); if (!(G.toasts && G.toasts.length)) drawHUD();
       const A = G.arr;
       if (A.phase === 'dialogue') { const l = A.lines[A.i]; drawDialog(l[0], l[1], A.shown | 0); }
       if (A.phase === 'fin' && A.demande) txt('OUI!', 160, 50 - Math.abs(Math.sin(G.t * 4)) * 6, 20, '#ff6a8a', 'center');
@@ -3523,11 +3531,16 @@ function drawToasts(dt) {
   const T = G.toasts[0];
   T.t += dt;
   if (T.t > 2.6) { G.toasts.shift(); return; }
-  const y = T.t < .3 ? 185 - T.t / .3 * 37 : T.t > 2.3 ? 148 + (T.t - 2.3) / .3 * 37 : 148;
-  panel(90, y, 140, 26);
-  dessinIcone(iconeBadge(T.b.ic), 106, y + 13, 18, 16);
-  txt('Badge débloqué!', 120, y + 5, 4, '#ffe060');
-  txt(T.b.nom, 120, y + 14, 5, '#ffffff');
+  // pendant les répliques, le badge va en haut au lieu de cacher la boîte de texte ou les personnages
+  const A = Math.min(1, T.t / .3, (2.6 - T.t) / .3);
+  let x = 90, y = 185 - A * 37;
+  if (G.state === 'arrivee') { x = 4; y = 4 - (1 - A) * 8; g.globalAlpha = A; }            // par-dessus la jauge, loin des personnages
+  else if (G.state === 'intermede') { x = 176; y = 16 - (1 - A) * 8; g.globalAlpha = A; }
+  panel(x, y, 140, 26);
+  dessinIcone(iconeBadge(T.b.ic), x + 16, y + 13, 18, 16);
+  txt('Badge débloqué!', x + 30, y + 5, 4, '#ffe060');
+  txt(T.b.nom, x + 30, y + 14, 5, '#ffffff');
+  g.globalAlpha = 1;
 }
 
 // ---- écran des badges ----
