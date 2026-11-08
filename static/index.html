@@ -2544,7 +2544,7 @@ function updateTitle(dt) {
     } else {
       G.visite = 1; G.amour = 0; G.totalFleurs = 0; G.decks = {}; G.derniers = {}; G.pet = 0; G.oui = false; G.vus = {}; G.partie = { plantes: 0, temps: 0, par: 0, coeurs: 0, ours: 0, sansFaute: 0, wheelie: 0 };
       suivi('nouvelle', 1);
-      G.aidePage = 0; G.aideEnsuite = 'jeu'; setState('aide');
+      startVisit();   // les instructions restent dans « Comment jouer » au menu
     }
   }
 }
