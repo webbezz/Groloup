@@ -2346,7 +2346,8 @@ function drawWorld() {
 
 // Bouquet de fleurs des champs: sa grosseur suit le nombre de fleurs cueillies
 const COUL_FLEURS = ['#ffffff', '#ffe060', '#ff8ac0', '#b48aff', '#ff6a5a', '#8ad8ff'];
-function drawBouquet(x, y, n) {
+function drawBouquet(x, y, n, penche) {
+  penche = penche || 0;   // > 0: le bouquet penche vers la droite (tenu d'une main, à côté du visage)
   x = Math.round(x); y = Math.round(y);
   const tier = n >= 25 ? 4 : n >= 15 ? 3 : n >= 10 ? 2 : n >= 5 ? 1 : 0;
   const tetes = [3, 4, 6, 9, 13][tier], haut = [5, 5, 6, 8, 10][tier], large = [3, 4, 6, 9, 12][tier];
@@ -2355,7 +2356,7 @@ function drawBouquet(x, y, n) {
     const u = tetes === 1 ? 0 : i / (tetes - 1) - .5;
     const hx = x + Math.round(u * large + ((i * 7) % 3 - 1) * .5);
     const hy = y - 3 - haut + Math.round(u * u * 4 * (haut * .45)) - (i % 2) * Math.min(2, tier);
-    tops.push([hx, hy, COUL_FLEURS[(i * 5 + n) % COUL_FLEURS.length]]);
+    tops.push([hx + Math.round((y - hy) * penche), hy, COUL_FLEURS[(i * 5 + n) % COUL_FLEURS.length]]);
   }
   // tiges
   for (const [hx, hy] of tops) { g.strokeStyle = '#3a8a3a'; g.lineWidth = 1; g.beginPath(); g.moveTo(x + .5, y - 2); g.lineTo(hx + .5, hy + 1); g.stroke(); }
@@ -2367,17 +2368,17 @@ function drawBouquet(x, y, n) {
   }
   // papier pis ruban
   const cone = 1 + Math.min(3, tier);
-  for (let k = 0; k < 4; k++) { const w = Math.max(1, Math.round((k + 1) / 4 * cone)); rect(x - w + 1, y - k, w * 2 - 1, 1, k % 2 ? '#f4efe2' : '#e2d8c4'); }
-  rect(x - Math.max(0, cone - 2), y - 2, Math.max(1, cone * 2 - 3), 1, '#e04a6a');
+  for (let k = 0; k < 4; k++) { const w = Math.max(1, Math.round((k + 1) / 4 * cone)), d = Math.round(k * penche); rect(x - w + 1 + d, y - k, w * 2 - 1, 1, k % 2 ? '#f4efe2' : '#e2d8c4'); }
+  rect(x - Math.max(0, cone - 2) + Math.round(2 * penche), y - 2, Math.max(1, cone * 2 - 3), 1, '#e04a6a');
 }
 function drawBouquetArrivee(cx, cy) {
   const A = G.arr, lev = G.lev;
   const jump = A.jump ? Math.round(Math.abs(Math.sin(G.t * 9)) * -4) : 0;
   const ax = P.x + 3, ay = P.y - 11;                                   // dans la main de Groloup
-  const bx = lev.didiX + 16, by = gyAt(lev, lev.didiX) - 10 + jump;   // dans les mains de Didi
+  const bx = lev.didiX + 20, by = gyAt(lev, lev.didiX) - 9 + jump;    // dans la main droite de Didi, penché vers l'extérieur
   const k = A.don == null ? 0 : clamp(A.don / .7, 0, 1);
   const e = k * k * (3 - 2 * k);
-  drawBouquet(lerp(ax, bx, e) - cx, lerp(ay, by, e) - Math.sin(Math.PI * e) * 5 - cy, A.bouquet);
+  drawBouquet(lerp(ax, bx, e) - cx, lerp(ay, by, e) - Math.sin(Math.PI * e) * 5 - cy, A.bouquet, .6 * e);
 }
 
 function drawHUD() {
