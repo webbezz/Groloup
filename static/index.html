@@ -1904,7 +1904,9 @@ function updateCamera(dt, look) {
 
 // ---------------- RENDU ----------------
 const TQ = [];
+let TXT_ZOOM = null;   // pendant le dessin du monde zoomé: { ax, ay, tx, ty, z }
 function txt(s, x, y, size, col, align, shadow) {
+  if (TXT_ZOOM) { const Z = TXT_ZOOM; x = Z.tx + (x - Z.ax) * Z.z; y = Z.ty + (y - Z.ay) * Z.z; }
   TQ.push({ s, x, y, size: size || 6, col: col || '#fff', align: align || 'left', shadow: shadow !== false });
 }
 function fontPx(size) { return Math.max(6, Math.round(size * S)); }
@@ -2234,9 +2236,38 @@ function drawParticles(cx, cy) {
   for (const q of G.pops) txt(q.txt, q.x - cx, q.y - cy, q.size, q.col, 'center');
 }
 
+// Zoom: près d'une maison, la caméra cadre Groloup ET la maison (jusqu'à 2x), pis dézoome en s'éloignant
+const ZOOM_ETATS = { intro: 1, monte: 1, arrivee: 1, retour: 1, descend: 1, bilan: 1 };
+function cibleZoom() {
+  const lev = G.lev;
+  if (!lev || !ZOOM_ETATS[G.state] || lev.didiX == null || lev.didiX < 0) return { z: 1, fx: P.x, fy: P.y - 30 };
+  const maisons = [lev.homeX - 8, lev.didiX - 4];
+  const hx = Math.abs(P.x - maisons[0]) < Math.abs(P.x - maisons[1]) ? maisons[0] : maisons[1];
+  const dist = Math.abs(hx - P.x);
+  const z = clamp(W / (dist + 120), 1, 2);
+  return { z, fx: (hx + P.x) / 2, fy: ((gyAt(lev, hx) - 32) + (P.y - 20)) / 2 };
+}
+function majZoom() {
+  const c = cibleZoom(), dt = Math.min(.05, G.dtFrame || 1 / 60);
+  const Z = G.zoomCur;
+  if (!Z || Z.lev !== G.lev) { G.zoomCur = { z: c.z, fx: c.fx, fy: c.fy, lev: G.lev }; return G.zoomCur; }
+  Z.z = approach(Z.z, c.z, dt * 1.6); Z.fx = lerp(Z.fx, c.fx, Math.min(1, dt * 6)); Z.fy = lerp(Z.fy, c.fy, Math.min(1, dt * 6));
+  return Z;
+}
 function drawWorld() {
   let cx = Math.round(G.camX), cy = Math.round(G.camY);
   if (G.shake > 0) { cx += Math.round((Math.random() - .5) * 4); cy += Math.round((Math.random() - .5) * 4); }
+  const Z = majZoom();
+  const zoome = Z.z > 1.01;
+  if (zoome) {
+    const k = clamp((Z.z - 1) / 1, 0, 1);
+    const ax = Z.fx - cx, ay = Z.fy - cy;              // le point visé, à l'écran sans zoom
+    // la vue zoomée reste à l'intérieur de ce que la caméra dessine (jamais de trou sur les bords)
+    const tx = clamp(lerp(ax, W / 2, k), W - (W - ax) * Z.z, ax * Z.z);
+    const ty = clamp(lerp(ay, H / 2 + 6, k), H - (H - ay) * Z.z, ay * Z.z);
+    g.save(); g.translate(tx, ty); g.scale(Z.z, Z.z); g.translate(-ax, -ay);
+    TXT_ZOOM = { ax, ay, tx, ty, z: Z.z };
+  }
   drawSky(cx, cy);
   drawDecor(cx, cy);
   drawGround(cx, cy);
@@ -2244,6 +2275,7 @@ function drawWorld() {
   drawPlayer(cx, cy);
   if (G.state === 'arrivee' && G.arr && G.arr.bouquet > 0 && P.pose === 'debout') drawBouquetArrivee(cx, cy);
   drawParticles(cx, cy);
+  if (zoome) { g.restore(); TXT_ZOOM = null; }
   if (G.pal.night) { g.fillStyle = 'rgba(10,14,50,.18)'; g.fillRect(0, 0, W, H); }
   if (G.event && G.event.ambient === 'pluie' && G.state !== 'titre') { g.fillStyle = 'rgba(50,60,80,.16)'; g.fillRect(0, 0, W, H); }
 }
@@ -3385,7 +3417,6 @@ function render() {
     case 'arrivee': {
       drawWorld(); drawHUD();
       const A = G.arr;
-      if (P.pose === 'debout' && G.stats.fleurs > 0 && A.phase !== 'fin') spr(SPR.bouquet, P.x - G.camX - 4, P.y - G.camY - 16);
       if (A.phase === 'dialogue') { const l = A.lines[A.i]; drawDialog(l[0], l[1], A.shown | 0); }
       if (A.phase === 'fin' && A.demande) txt('OUI!', 160, 50 - Math.abs(Math.sin(G.t * 4)) * 6, 20, '#ff6a8a', 'center');
       break;
