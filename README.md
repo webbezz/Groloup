@@ -57,6 +57,21 @@ demande un `docker compose up -d --build` fait à la main.
 
 Les records restent dans `data/scores.db` (volume monté, ignoré par git), ils ne sont jamais perdus.
 
+## Statistiques
+
+Le jeu envoie quelques événements anonymes au serveur : ouverture du jeu, nouvelle partie ou reprise,
+visite terminée, grande demande, finale, score enregistré. Chaque navigateur reçoit un identifiant
+au hasard (`gd_vid`); aucune adresse IP n'est gardée avec ces événements.
+
+La page `https://groloup.webbezai.org/stats` est protégée par un mot de passe défini dans `/opt/groloup/.env` :
+
+    STATS_PASS=un-mot-de-passe
+
+puis `docker compose up -d --build`. Sans `STATS_PASS`, la page n'existe pas (404).
+Le navigateur demande un nom d'utilisateur (n'importe lequel) et le mot de passe.
+
+En bas de la page, un bouton exclut l'appareil courant des chiffres (pour ne pas compter tes propres parties).
+
 ## Gérer le tableau d'honneur
 
     sqlite3 data/scores.db "SELECT nom, points, visites FROM scores ORDER BY points DESC;"

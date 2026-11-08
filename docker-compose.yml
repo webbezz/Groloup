@@ -4,8 +4,11 @@ services:
     container_name: groloup
     restart: unless-stopped
     ports:
-      # port local changeable sans toucher au dépôt: GROLOUP_PORT=xxxx dans un fichier .env
+      # port local changeable sans toucher au dépôt: GROLOUP_PORT=xxxx dans le fichier .env
       - "127.0.0.1:${GROLOUP_PORT:-8076}:8000"
+    environment:
+      # mot de passe de la page /stats, défini dans .env (jamais dans git); vide = page désactivée
+      - STATS_PASS=${STATS_PASS:-}
     volumes:
       - ./data:/data
       # le jeu est lu directement du disque: un git pull suffit, sans rebuild

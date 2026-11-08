@@ -2239,6 +2239,7 @@ function endVisit() {
   G.partie = Object.assign({ plantes: 0, temps: 0, par: 0, coeurs: 0, ours: 0, sansFaute: 0, wheelie: 0 }, G.partie || {});
   G.partie.plantes += G.stats.plantes; G.partie.temps += G.stats.t;
   G.partie.par += G.up ? G.up.parTime : 0; G.partie.coeurs += G.stats.coeurs;
+  suivi('visite', G.visite, { amour: Math.floor(G.amour), temps: Math.round(G.stats.t), fleurs: G.stats.fleurs, plantes: G.stats.plantes });
   if (G.oui) { startFinale(); return; }
   store('groloup_didi', { visite: G.visite + 1, amour: G.amour, fleurs: G.totalFleurs, decks: G.decks, derniers: G.derniers, pet: G.pet, vus: G.vus || {}, partie: G.partie });
   setState('bilan');
@@ -2338,9 +2339,10 @@ function updateTitle(dt) {
     if (choix === 'continuer') {
       G.visite = G.save.visite; G.amour = G.save.amour; G.totalFleurs = G.save.fleurs || 0;
       G.decks = G.save.decks || {}; G.derniers = G.save.derniers || {}; G.pet = G.save.pet || 0; G.vus = G.save.vus || { chanson: !!G.save.chanson }; G.partie = Object.assign({ plantes: 0, temps: 0, par: 0, coeurs: 0, ours: 0, sansFaute: 0, wheelie: 0 }, G.save.partie || {});
-      G.oui = false; startVisit();
+      G.oui = false; suivi('reprise', G.visite, { amour: Math.floor(G.amour) }); startVisit();
     } else {
       G.visite = 1; G.amour = 0; G.totalFleurs = 0; G.decks = {}; G.derniers = {}; G.pet = 0; G.oui = false; G.vus = {}; G.partie = { plantes: 0, temps: 0, par: 0, coeurs: 0, ours: 0, sansFaute: 0, wheelie: 0 };
+      suivi('nouvelle', 1);
       G.aidePage = 0; G.aideEnsuite = 'jeu'; setState('aide');
     }
   }
@@ -2372,6 +2374,7 @@ function drawTitle() {
 // ---------- finale: le mariage, puis 50 ans plus tard ----------
 let fin = null;
 function startFinale() {
+  suivi('finale', G.visite);
   store('groloup_didi', null);
   badge('oui'); if (G.visite <= 5) badge('coupdefoudre');
   G.finEtape = null; G.monScore = null;
@@ -2680,6 +2683,7 @@ function startIntermede() {
 }
 // Scène spéciale après la demande en mariage
 function startDemande() {
+  suivi('demande', G.visite);
   const lines = [
     ['Didi', "Groloup... regarde comme la bague brille!"],
     ['Groloup', "Pas autant que tes yeux, Didi."],
@@ -3190,6 +3194,37 @@ function drawBadges() {
   if (((G.t * 2) | 0) % 2) txt(touchMode ? 'Touche pour revenir' : 'Entrée pour revenir', 160, 165, 4, '#ffd0dc', 'center');
 }
 
+// ---- suivi des parties (seulement quand le serveur du jeu répond) ----
+const API_EVT = 'api/evt';
+const SUIVI = { pret: false, actif: false, file: [], sid: null, vid: null };
+function idAleatoire() {
+  try { if (crypto.randomUUID) return crypto.randomUUID(); } catch (e) { }
+  return 'x' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+SUIVI.vid = load('gd_vid', null);
+if (!SUIVI.vid) { SUIVI.vid = idAleatoire(); store('gd_vid', SUIVI.vid); }
+SUIVI.sid = idAleatoire();
+function envoyerEvt(e) {
+  const corps = JSON.stringify(e);
+  try {
+    if (navigator.sendBeacon && navigator.sendBeacon(API_EVT, new Blob([corps], { type: 'application/json' }))) return;
+  } catch (x) { }
+  fetch(API_EVT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: corps, keepalive: true }).catch(() => { });
+}
+function suivi(type, visite, d) {
+  const e = { vid: SUIVI.vid, sid: SUIVI.sid, type, visite: visite == null ? null : visite, d: d || null };
+  if (!SUIVI.pret) { SUIVI.file.push(e); return; }
+  if (SUIVI.actif) envoyerEvt(e);
+}
+function demarrerSuivi() {
+  if (!/^https?:$/.test(location.protocol)) { SUIVI.pret = true; SUIVI.file = []; return; }
+  const ctl = new AbortController(); const to = setTimeout(() => ctl.abort(), 4000);
+  fetch('api/scores', { cache: 'no-store', signal: ctl.signal })
+    .then(r => { clearTimeout(to); SUIVI.actif = r.ok && (r.headers.get('content-type') || '').includes('json'); })
+    .catch(() => { SUIVI.actif = false; })
+    .finally(() => { SUIVI.pret = true; const f = SUIVI.file; SUIVI.file = []; if (SUIVI.actif) f.forEach(envoyerEvt); });
+}
+
 // ---- tableau d'honneur (serveur si disponible, sinon sur l'appareil) ----
 const API_SCORES = 'api/scores';
 G.scores = []; G.enLigne = false;
@@ -3304,6 +3339,7 @@ async function validerNom() {
   const pts = (G.pointage || calculerPoints()).total;
   G.monScore = { nom, points: pts, visites: G.visite, fleurs: G.totalFleurs, plantes: p.plantes || 0, temps: Math.round(p.temps || 0), badges: nbBadges() };
   G.finEtape = 'envoi';
+  suivi('score', G.visite, { points: pts });
   await envoyerScore(G.monScore);
   G.finEtape = 'honneur';
 }
@@ -3311,6 +3347,10 @@ $('nomOk').addEventListener('click', validerNom);
 $('nomPasser').addEventListener('click', () => { fermerNom(); G.finEtape = 'honneur'; chargerScores(); });
 $('nomInput').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); validerNom(); } });
 chargerScores();
+
+// le suivi démarre une fois tout le code chargé (extras.js est le dernier fichier)
+demarrerSuivi();
+suivi('ouverture', null, { largeur: innerWidth, hauteur: innerHeight, tactile: touchMode });
 
 </script>
 </body>
