@@ -2513,44 +2513,28 @@ function startArrival() {
   // 1) salutation de Groloup
   if (G.visite === 1) L.push(['Groloup', piocher('premier', DIALOGUES.premier)]);
   else ajouter(tirer('salut', DIALOGUES.salut));
-  // 2) toutes les histoires de la visite, dans un ordre naturel, tant que chacun a 5 répliques ou moins
-  const MAX = 5;
-  const parle = lignes => { const c = { Groloup: 0, Didi: 0 }; for (const l of L.concat(lignes)) c[l[0]] = (c[l[0]] || 0) + 1; return c; };
-  const rentre = x => { const c = parle(lignesDe(x)); return c.Groloup <= MAX && c.Didi <= MAX; };
-  const sujets = new Set();
-  const raconter = (nom, pool, extra, sujet, donne) => {
-    const ex = piocher(nom, pool, x => echangeOk(x, Object.assign({}, ctx, extra || {})), rentre);
-    if (!ex) return false;
-    if (donne) A.donIdx = L.length;
-    ajouter(ex); if (sujet) sujets.add(sujet);
-    return true;
-  };
-  const causes = st.causes || {};
-  // la mouffette se remarque tout de suite
-  if (st.mouffette) { raconter('mouffette', DIALOGUES.mouffette, null, 'odeur'); A.bonus = (A.bonus || 0) - 1; }
-  // les fleurs (il donne son bouquet à ce moment-là)
-  if (st.fleurs === 0) raconter('pasDeFleurs', DIALOGUES.pasDeFleurs);
-  else if (st.fleurs >= 15) raconter('grosBouquet', DIALOGUES.grosBouquet, null, null, true);
-  else raconter('bouquet', DIALOGUES.bouquet, null, null, true);
-  // en retard ou arrivé vite
-  if (st.t > lev.parTime) raconter('retard', DIALOGUES.retard);
-  else if (st.t < lev.parTime * .7) raconter('vite', DIALOGUES.vite);
-  // les chutes: ce qui l'a fait tomber le plus souvent
-  if (st.plantes >= 3) {
+  // 2) UNE seule histoire par visite (la plus marquante), en échange qui se répond
+  const causes = st.causes || {}, evt = G.event;
+  let ex = null;
+  if (st.mouffette) { ex = tirer('mouffette', DIALOGUES.mouffette); A.bonus = (A.bonus || 0) - 1; }
+  else if (st.plantes >= 3) {
+    // ce qui l'a fait tomber le plus souvent
     const top = Object.keys(causes).filter(k => DIALOGUES.bobos[k]).sort((x, y) => causes[y] - causes[x])[0];
-    if (!(top && raconter('bobos_' + top, DIALOGUES.bobos[top], { nb: causes[top] }, top))) raconter('bobos_autre', DIALOGUES.bobos.autre, null, 'bobos');
+    if (top) ex = tirer('bobos_' + top, DIALOGUES.bobos[top], { nb: causes[top] });
+    if (!ex) ex = tirer('bobos_autre', DIALOGUES.bobos.autre);
   }
-  // le vent dans le dos
-  if (st.pets >= 3) raconter('pets', DIALOGUES.pets);
-  // 3) la remarque de Didi sur la journée, avec la réponse de Groloup (sauf si on vient d'en parler)
-  const evt = G.event, c = parle([]);
-  if (evt && REMARQUES[evt.id] && !sujets.has(evt.sujet) && c.Groloup < MAX && c.Didi < MAX) {
-    const r = piocher('rem_' + evt.id, REMARQUES[evt.id]);
-    if (r) {
-      L.push(['Didi', r[0].replace('{auj}', auj)]);
-      L.push(['Groloup', typeof r[1] === 'function' ? r[1](st) : r[1]]);
-    }
+  else if (st.pets >= 3) ex = tirer('pets', DIALOGUES.pets);
+  else if (st.t > lev.parTime) ex = tirer('retard', DIALOGUES.retard);
+  else if (st.fleurs === 0) ex = tirer('pasDeFleurs', DIALOGUES.pasDeFleurs);
+  else if (st.fleurs >= 15) { A.donIdx = L.length; ex = tirer('grosBouquet', DIALOGUES.grosBouquet); }
+  else if (st.t < lev.parTime * .7) ex = tirer('vite', DIALOGUES.vite);
+  else {
+    // visite ordinaire: une fois sur deux, Didi parle plutôt de la journée (la remarque remplace l'histoire du bouquet)
+    const r = evt && REMARQUES[evt.id] && Math.random() < .5 ? piocher('rem_' + evt.id, REMARQUES[evt.id]) : null;
+    if (r) ex = [['Didi', r[0]], ['Groloup', typeof r[1] === 'function' ? r[1](st) : r[1]]];
+    else { A.donIdx = L.length; ex = tirer('bouquet', DIALOGUES.bouquet); }
   }
+  ajouter(ex);
   if (st.fleurs >= 15) A.bonus = (A.bonus || 0) + 1;
   if (st.t < lev.parTime * .7) A.bonus = (A.bonus || 0) + 1;
   if (st.plantes === 0) A.sansFaute = true;
@@ -3135,11 +3119,7 @@ function startIntermede() {
   const lines = lignesDe(scene).map(l => [l[0], l[1].replace('{N}', nbF), l[2]]);
   // au revoir: Didi parle selon son humeur, Groloup lui répond
   const tier = G.amour < 25 ? 0 : G.amour < 55 ? 1 : G.amour < 85 ? 2 : 3;
-  const aurevoir = piocher('depart' + tier, DIALOGUES.depart[tier]);
-  const parle = extra => { const c = { Groloup: 0, Didi: 0 }; for (const l of lines.concat(aurevoir, extra)) c[l[0]] = (c[l[0]] || 0) + 1; return c; };
-  const deux = piocher('inter_' + type, def.scenes, s => !s.min || G.amour >= s.min, s => { const c = parle(lignesDe(s)); return c.Groloup <= 5 && c.Didi <= 5; });
-  if (deux) for (const l of lignesDe(deux)) lines.push([l[0], l[1].replace('{N}', nbF), l[2]]);
-  for (const l of aurevoir) lines.push(l);
+  for (const l of piocher('depart' + tier, DIALOGUES.depart[tier])) lines.push(l);
   G.inter = { type, titre: def.titre, lines, i: 0, shown: 0, t: 0 };
   setState('intermede');
   Sound.play(def.musique || 'amour');
