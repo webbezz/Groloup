@@ -72,6 +72,8 @@ Le navigateur demande un nom d'utilisateur (n'importe lequel) et le mot de passe
 
 En bas de la page, un bouton exclut l'appareil courant des chiffres (pour ne pas compter tes propres parties).
 
+Tout en bas, « Remise à zéro » : un bouton efface les scores, l'autre efface les statistiques (les appareils exclus restent exclus). Avant chaque effacement, une copie de la base est faite dans `/opt/groloup/data/sauvegardes/` (les 10 plus récentes sont gardées).
+
 ## Gérer le tableau d'honneur
 
     sqlite3 data/scores.db "SELECT nom, points, visites FROM scores ORDER BY points DESC;"

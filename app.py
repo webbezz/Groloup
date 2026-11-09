@@ -197,6 +197,36 @@ def exclure(x: Exclusion, request: Request):
     return {"ok": True}
 
 
+class Effacement(BaseModel):
+    quoi: str = Field(pattern=r"^(scores|stats)$")
+
+
+SAUVEGARDES = os.path.join(os.path.dirname(DB_PATH), "sauvegardes")
+
+
+@app.post("/stats/effacer")
+def effacer(e: Effacement, request: Request):
+    """Remise à zéro des scores OU des statistiques. Une copie de la base est faite avant, dans data/sauvegardes."""
+    verifier(request)
+    if not request.headers.get("content-type", "").startswith("application/json"):
+        raise HTTPException(status_code=415)
+    os.makedirs(SAUVEGARDES, exist_ok=True)
+    copie = os.path.join(SAUVEGARDES, f"scores-{time.strftime('%Y%m%d-%H%M%S')}-avant-{e.quoi}.db")
+    with closing(db()) as c, closing(sqlite3.connect(copie)) as d:
+        c.backup(d)
+    # on garde les 10 copies les plus récentes
+    for vieux in sorted(f for f in os.listdir(SAUVEGARDES) if f.endswith(".db"))[:-10]:
+        os.remove(os.path.join(SAUVEGARDES, vieux))
+    table = "scores" if e.quoi == "scores" else "evenements"
+    with closing(db()) as c:
+        n = c.execute(f"DELETE FROM {table}").rowcount
+        c.commit()
+        c.execute("VACUUM")
+    if e.quoi == "scores":
+        DERNIER_ENVOI.clear()
+    return {"ok": True, "efface": n, "sauvegarde": os.path.basename(copie)}
+
+
 def heure(ts: int, fmt: str = "%Y-%m-%d %H:%M") -> str:
     return datetime.fromtimestamp(ts, TZ).strftime(fmt)
 
@@ -227,6 +257,7 @@ def stats(request: Request):
         par_type = {r["type"]: r["n"] for r in q(f"SELECT type, COUNT(*) n FROM evenements WHERE {F} GROUP BY type")}
         mobiles = un(f"SELECT COUNT(DISTINCT vid) FROM evenements WHERE {F} AND appareil='mobile'")
         nb_scores = un("SELECT COUNT(*) FROM scores")
+        nb_evt = un("SELECT COUNT(*) FROM evenements")
         exclus = un("SELECT COUNT(*) FROM exclus")
         liste_exclus = [r["vid"] for r in q("SELECT vid FROM exclus")]
 
@@ -284,6 +315,8 @@ table{{border-collapse:collapse;width:100%;font-size:14px}} th,td{{padding:6px 1
 th{{background:#efeaf8}} .n{{text-align:right;font-variant-numeric:tabular-nums}}
 .moi{{margin-top:28px;padding:12px;background:#fff;border:2px dashed #1b1035}}
 button{{font:inherit;padding:8px 14px;border:2px solid #1b1035;background:#ffe9a8;cursor:pointer}}
+.raz{{margin-top:16px;padding:12px;background:#fff;border:2px dashed #b3261e}} .raz p{{margin:0 0 10px;color:#4a4560}}
+.raz button{{background:#ffd9d6;margin:0 8px 8px 0}}
 </style></head><body><main>
 <h1>Groloup fréquente Didi — statistiques</h1>
 <p class=s>Heures de {html.escape(str(TZ))}. Un « appareil » = un navigateur. {exclus} appareil(s) exclu(s) des chiffres.</p>
@@ -298,6 +331,11 @@ button{{font:inherit;padding:8px 14px;border:2px solid #1b1035;background:#ffe9a
 {tableau(["Quand", "Appareil", "Type", "Action", "Visite", "Détails"], recents, num=(4,))}
 <div class=moi><p id=moiTxt style="margin:0 0 8px">Cet appareil : …</p>
 <button type=button id=moiBtn hidden></button></div>
+<div class=raz><h2 style="margin:0 0 6px">Remise à zéro</h2>
+<p>Une copie de la base est gardée sur le serveur avant chaque effacement. Les appareils exclus restent exclus.</p>
+<button type=button data-quoi=scores data-n="{nb_scores}">Effacer les scores ({nb_scores})</button>
+<button type=button data-quoi=stats data-n="{nb_evt}">Effacer les statistiques ({nb_evt} événements)</button>
+<p id=razTxt style="margin:6px 0 0"></p></div>
 </main>
 <script>
 (function () {{
@@ -314,6 +352,17 @@ button{{font:inherit;padding:8px 14px;border:2px solid #1b1035;background:#ffe9a
       .then(function (r) {{ if (r.ok) location.reload(); }});
   }};
 }})();
+document.querySelectorAll('.raz button').forEach(function (b) {{
+  b.onclick = function () {{
+    var q = b.dataset.quoi, quoi = q === 'scores' ? 'les ' + b.dataset.n + ' scores du tableau d’honneur' : 'les ' + b.dataset.n + ' événements des statistiques';
+    if (!confirm('Effacer ' + quoi + ' ?')) return;
+    var t = document.getElementById('razTxt'); t.textContent = 'Effacement…';
+    fetch('stats/effacer', {{ method: 'POST', headers: {{ 'Content-Type': 'application/json' }}, body: JSON.stringify({{ quoi: q }}) }})
+      .then(function (r) {{ return r.ok ? r.json() : Promise.reject(r.status); }})
+      .then(function (j) {{ t.textContent = j.efface + ' ligne(s) effacée(s). Copie : ' + j.sauvegarde; setTimeout(function () {{ location.reload(); }}, 1500); }})
+      .catch(function (e) {{ t.textContent = 'Erreur (' + e + '). Rien n’a été effacé.'; }});
+  }};
+}});
 </script></body></html>"""
     return HTMLResponse(page, headers={"Cache-Control": "no-store", "X-Robots-Tag": "noindex"})
 
