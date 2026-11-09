@@ -1942,16 +1942,19 @@ function updateCamera(dt, look) {
 // ---------------- RENDU ----------------
 const TQ = [];
 let TXT_ZOOM = null;   // pendant le dessin du monde zoomé: { ax, ay, tx, ty, z }
-function txt(s, x, y, size, col, align, shadow) {
-  if (TXT_ZOOM) { const Z = TXT_ZOOM; x = Z.tx + (x - Z.ax) * Z.z; y = Z.ty + (y - Z.ay) * Z.z; }
-  TQ.push({ s, x, y, size: size || 6, col: col || '#fff', align: align || 'left', shadow: shadow !== false });
+// monde = texte peint sur un objet du décor (pancarte): il grossit avec le zoom, comme l'objet
+function txt(s, x, y, size, col, align, shadow, monde) {
+  size = size || 6;
+  if (TXT_ZOOM) { const Z = TXT_ZOOM; x = Z.tx + (x - Z.ax) * Z.z; y = Z.ty + (y - Z.ay) * Z.z; if (monde) size *= Z.z; }
+  TQ.push({ s, x, y, size, col: col || '#fff', align: align || 'left', shadow: shadow !== false, monde: !!monde });
 }
 function fontPx(size) { return Math.max(6, Math.round(size * S)); }
 function flushText() {
   octx.textBaseline = 'top';
   for (const t of TQ) {
-    const px = fontPx(t.size);
-    octx.font = px + 'px "Press Start 2P", monospace';
+    // texte du décor: grosseur exacte (pas arrondie), pour qu'il grossisse en douceur avec sa pancarte
+    const px = t.monde ? t.size * S : fontPx(t.size);
+    octx.font = px.toFixed(2) + 'px "Press Start 2P", monospace';
     octx.textAlign = t.align;
     const X = Math.round(t.x * S), Y = Math.round(t.y * S), o = Math.max(1, Math.round(px / 8));
     if (t.shadow) { octx.fillStyle = 'rgba(10,4,20,.85)'; octx.fillText(t.s, X + o, Y + o); }
@@ -2121,7 +2124,7 @@ function drawDecor(cx, cy) {
       case 'ferme': drawBarn(X, base + 2); break;
       case 'panneau':
         rect(X, base - 22, 2, 22, '#5a3a22'); rect(X - 14, base - 30, 30, 10, '#1f7a3a'); rect(X - 13, base - 29, 28, 8, '#2a9a4a');
-        txt('RANG 14', X - 12, base - 27.5, 3.6, '#ffffff', 'left', false); break;
+        txt('RANG 14', X + 1, base - 27.4, 3.6, '#ffffff', 'center', false, true); break;
       case 'oursAmi': {
         const fr = SPR.ours[(G.t * 2 | 0) % 2];
         spr(SPR.ours[0], X - 11, base - 14, true);
