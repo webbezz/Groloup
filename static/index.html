@@ -1145,6 +1145,22 @@ function buildSprites() {
     DISC(x, 27, 19, 4, 4, '#1c1c1c'); DISC(x, 27, 19, 1, 1, '#e8c020');
     return c;
   });
+  // le tracteur vu de dos, qui s'en va dans le champ
+  SPR.tracteurDos = [0, 1].map(f => {
+    const [c, x] = mkCanvas(24, 24);
+    for (const wx of [0, 18]) {
+      rect2(x, wx, 10, 6, 13, '#1c1c1c'); rect2(x, wx + 1, 9, 4, 1, '#1c1c1c'); rect2(x, wx + 1, 23, 4, 1, '#1c1c1c');
+      for (let k = 0; k < 3; k++) rect2(x, wx, 11 + k * 4 + f * 2, 6, 1, '#3a3a3a');
+      rect2(x, wx, 6, 6, 3, '#c83020'); rect2(x, wx, 6, 6, 1, '#e8503a');
+    }
+    rect2(x, 6, 11, 12, 9, '#a82818'); rect2(x, 6, 11, 12, 1, '#c83020'); rect2(x, 10, 20, 4, 2, '#5a5a62'); rect2(x, 11, 22, 2, 2, '#3a3a40');
+    rect2(x, 8, 9, 8, 2, '#2a2a2a');
+    rect2(x, 19, 0, 2, 7, '#3a3a40');
+    // le fermier, de dos
+    rect2(x, 9, 0, 6, 2, '#2a5a9a'); rect2(x, 10, 2, 4, 2, '#7a4a2a'); rect2(x, 9, 4, 6, 5, '#a83a2a');
+    P1(x, 10, 5, '#7a1d16'); P1(x, 13, 6, '#7a1d16'); P1(x, 11, 7, '#7a1d16'); rect2(x, 8, 5, 1, 3, '#a83a2a'); rect2(x, 15, 5, 1, 3, '#a83a2a');
+    return c;
+  });
   SPR.roche = ascii(['...gggggg...', '..gGGGgggg..', '.gGGgggggdg.', 'gGgggggggddg', 'gggggggdgddg', 'ggggggdddddd', 'gggdgddddddd', '.dddddddddd.'],
     { g: '#9a9aa2', G: '#c8c8d0', d: '#6a6a74' });
   SPR.billot = ascii(['.bbbbbbbbbbbbbbbb.', 'bBbbbbbBbbbbbbbbrr', 'bbbbBbbbbbbbBbbroR', 'bbbbbbbbbbbbbbbrRr', 'bBbbbbbbbbBbbbbrrr', '.bbbbbbbbbbbbbbbr.'],
@@ -1338,7 +1354,7 @@ function buildBackground(pal) {
 }
 
 // ---------------- GÉNÉRATION D'UNE VISITE ----------------
-function buildUp(n, seed, ev, nuit) {
+function buildUp(n, seed, ev, nuit, bon) {
   const p = paramsVisite(n), rng = rngOf(seed), L = p.L, d = Math.min(1, (n - 1) / 6);
   if (nuit) p.poids.oiseau = 0;   // la nuit, on voit mal les oiseaux: il n'y en a pas
   if (ev && ev.poids) for (const k in ev.poids) if (k in p.poids) p.poids[k] *= ev.poids[k];
@@ -1400,6 +1416,9 @@ function buildUp(n, seed, ev, nuit) {
   const caps = { vache: 2, tracteur: 1, ours: 2 + Math.round(d * 3), chien: 2 + Math.round(d * 2), mouffette: 1 + Math.round(d * 2),
     billot: 3, arbre: 3, boue: 4, nid: 5, roche: 5, oiseau: 4 + Math.round(d * 3), pommier: 4, fleurs: 6 };
   for (const k in caps) if (k !== 'tracteur') caps[k] = Math.ceil(caps[k] * 1.25);   // le trajet est plus long: un peu plus de chaque sorte
+  // l'arbre qui tombe est rare: seulement pour un joueur qui va bien, un (pas toujours), deux les jours de vent ou d'orage
+  caps.arbre = bon ? (rng() < .65 ? 1 : 0) + (ev && (ev.id === 'vent' || ev.id === 'pluie') ? 1 : 0) : 0;
+  if (!caps.arbre) p.poids.arbre = 0;
   const nb = {};
   // sac mélangé: toutes les sortes passent avant qu'une revienne, jamais 2 fois dans les 3 derniers tirages
   const sortes = Object.keys(p.poids).filter(k => p.poids[k] > 0);
@@ -1648,7 +1667,7 @@ function sonnette() {
       else { pop("L'ours s'en fiche!", e.x, e.y - 20, '#ffb060'); e.mad = 1.5; }
     }
     else if (e.k === 'vache' && dx < 100) pop('Meuh?', e.x, e.y - 18, '#ffffff', 5);
-    else if (e.k === 'tracteur' && e.state === 'roule' && dx < 140) { e.state = 'part'; pop('Il te laisse passer!', e.x, e.y - 30, '#ffe060', 5); }
+    else if (e.k === 'tracteur' && e.state === 'roule' && dx < 140) { e.state = 'part'; pop('Il te laisse passer!', e.x, e.y - 46, '#ffe060', 5); }
     else if (e.k === 'mouffette' && dx < 70) {
       P.stink = 3.5; G.stats.mouffette = true; Sound.fx('pschit'); badge('parfum');
       pop('Faut pas sonner une mouffette!', P.x, P.y - 44, '#a8ff80', 5);
@@ -1923,8 +1942,16 @@ function updateEnemies(dt) {
           if (e.puttT <= 0) { e.puttT = .35; part('pet', e.x + 10, e.y - 22, -4, -18, .9); if (Math.abs(P.x - e.x) < 160) Sound.fx('putt'); }
           if (e.x >= e.stop) { e.state = 'part'; pop('Bonne journée!', e.x, e.y - 30, '#ffffff', 5); }
         }
-        if (e.state === 'part') { e.fade = (e.fade || 0) + dt; e.x += 30 * dt; if (e.fade > 1) { e.gone = true; s.x0 = s.x1 = -9999; break; } }
         e.y = gyAt(lev, e.x);
+        if (e.state === 'part') {
+          // il tourne dans le champ pour laisser passer: on le voit de dos, il s'éloigne
+          if (e.tourne == null) { e.tourne = 0; e.vx = 0; s.x0 = s.x1 = -9999; burst(e.x, e.y - 2, 8, G.pal.roadL, 40); }
+          e.tourne += dt; e.anim += dt * 5; e.dy = Math.max(0, e.tourne - .2) * 15;
+          e.puttT = (e.puttT || 0) - dt;
+          if (e.puttT <= 0) { const sc = Math.max(.4, 1 - e.dy / 60); e.puttT = .45; part('pet', e.x + 8 * sc, e.y - 2 - Math.min(5, e.dy * .12) - 24 * sc, 0, -14, .9); }
+          if (e.dy > 48) e.gone = true;
+          continue;
+        }
         const onTop = P.onGround && Math.abs(P.y - s.top) < 1.5 && P.x + HW > s.x0 && P.x - HW < s.x1;
         s.x0 = e.x - 12; s.x1 = e.x + 14; s.top = e.y - 15;
         if (onTop && !e.gone) { P.x += e.vx * dt; P.y = s.top; e.surT = (e.surT || 0) + dt; if (e.surT > .6) badge('passager'); }
@@ -2029,7 +2056,8 @@ const ARBRE_CHUTE = .65;
 const FOUDRE = { avis: 1.15, rayon: 11 };
 function updateFoudre(dt) {
   const lev = G.lev;
-  const F = G.foudre = G.foudre || { cd: 4 + Math.random() * 3, cible: null, flash: 0 };
+  // rare: un seul éclair par orage, jusqu'à trois pour un joueur qui va bien (G.bon)
+  const F = G.foudre = G.foudre || { cd: 7 + Math.random() * 7, cible: null, flash: 0, n: 0, max: G.bon ? 3 : 1 };
   F.flash = Math.max(0, F.flash - dt);
   if (F.cible != null) {
     F.t += dt;
@@ -2039,9 +2067,10 @@ function updateFoudre(dt) {
       burst(F.cible, gy - 2, 12, '#ffe060', 90); burst(F.cible, gy - 2, 6, '#ffffff', 60);
       if (Math.abs(P.x - F.cible) < FOUDRE.rayon && P.y > gy - 45 && P.inv <= 0) { hurt({ k: 'eclair' }); pop('BZZZT!', P.x, P.y - 46, '#ffe060', 8); }
     }
-    if (F.t > FOUDRE.avis + .5) { F.cible = null; F.cd = 5 + Math.random() * 6; }
+    if (F.t > FOUDRE.avis + .5) { F.cible = null; F.n++; F.cd = 14 + Math.random() * 10; }
     return;
   }
+  if (F.n >= F.max) return;
   F.cd -= dt;
   if (F.cd > 0) return;
   const x = P.x + 55 + Math.random() * 50;
@@ -2262,19 +2291,30 @@ function txt(s, x, y, size, col, align, shadow, monde) {
   if (TXT_ZOOM) { const Z = TXT_ZOOM; x = Z.tx + (x - Z.ax) * Z.z; y = Z.ty + (y - Z.ay) * Z.z; if (monde) size *= Z.z; }
   TQ.push({ s, x, y, size, col: col || '#fff', align: align || 'left', shadow: shadow !== false, monde: !!monde });
 }
-// Sprites penchés (Groloup dans les côtes, en wheelie): dessinés à la résolution de l'écran, après le monde.
+// Sprites penchés (Groloup dans les côtes, en wheelie, les autos sur la pente): dessinés à la résolution de l'écran, après le monde.
 // Tourné dans la petite image de 320x180, un sprite devient une bouillie de pixels; ici, chaque pixel reste un carré net.
 const SQ = [];
 let sqTmp = null;
+function teintesMonde() {
+  const t = [];
+  if (G.pal && G.pal.night) t.push('rgba(10,14,50,.18)');
+  if (G.event && G.event.ambient === 'pluie' && G.state !== 'titre') t.push('rgba(50,60,80,.16)');
+  return t;
+}
+function sprPenche(img, x, y, a, ox, oy, flip) {
+  let z = 1;
+  if (TXT_ZOOM) { const Z = TXT_ZOOM; x = Z.tx + (x - Z.ax) * Z.z; y = Z.ty + (y - Z.ay) * Z.z; z = Z.z; }
+  SQ.push({ img, x, y, z, a, flip: !!flip, ox, oy, teintes: teintesMonde() });
+}
 function flushSprites() {
   for (const q of SQ) {
     let src = q.img;
     if (q.teintes.length) {   // nuit, pluie: le même voile que sur le décor
-      if (!sqTmp) sqTmp = mkCanvas(48, 40);
+      if (!sqTmp) sqTmp = mkCanvas(96, 48);
       const [c, x] = sqTmp;
-      x.globalCompositeOperation = 'source-over'; x.clearRect(0, 0, 48, 40); x.drawImage(q.img, 0, 0);
+      x.globalCompositeOperation = 'source-over'; x.clearRect(0, 0, c.width, c.height); x.drawImage(q.img, 0, 0);
       x.globalCompositeOperation = 'source-atop';
-      for (const t of q.teintes) { x.fillStyle = t; x.fillRect(0, 0, 48, 40); }
+      for (const t of q.teintes) { x.fillStyle = t; x.fillRect(0, 0, c.width, c.height); }
       src = c;
     }
     octx.save();
@@ -2443,6 +2483,17 @@ function drawBarn(X, base) {
   rect(X - 3, top - 7, 6, 5, '#f0e8e0'); rect(X - 2, top - 6, 4, 3, '#3a2a2a');
 }
 
+// petite police 3x5 en pixels, pour le texte peint sur le décor (il reste derrière les personnages)
+const PIX = { R: ['110', '101', '110', '101', '101'], A: ['010', '101', '111', '101', '101'], N: ['101', '111', '111', '101', '101'],
+  G: ['111', '100', '101', '101', '111'], '1': ['010', '110', '010', '010', '111'], '4': ['101', '101', '111', '001', '001'] };
+function pixTxt(s, x, y, col) {
+  for (const ch of s) {
+    if (ch === ' ') { x += 2; continue; }
+    const m = PIX[ch]; if (!m) { x += 4; continue; }
+    m.forEach((r, j) => { for (let i = 0; i < 3; i++) if (r[i] === '1') rect(x + i, y + j, 1, 1, col); });
+    x += 4;
+  }
+}
 function drawDecor(cx, cy) {
   const lev = G.lev, bg = G.bg, pal = G.pal;
   const poles = [];
@@ -2461,7 +2512,7 @@ function drawDecor(cx, cy) {
       case 'ferme': drawBarn(X, base + 2); break;
       case 'panneau':
         rect(X, base - 22, 2, 22, '#5a3a22'); rect(X - 14, base - 30, 30, 10, '#1f7a3a'); rect(X - 13, base - 29, 28, 8, '#2a9a4a');
-        txt('RANG 14', X + 1, base - 27.4, 3.6, '#ffffff', 'center', false, true); break;
+        pixTxt('RANG 14', X - 12, base - 27, '#ffffff'); break;
       case 'oursAmi': {
         const fr = SPR.ours[(G.t * 2 | 0) % 2];
         spr(SPR.ours[0], X - 11, base - 14, true);
@@ -2569,10 +2620,22 @@ function drawEntities(cx, cy) {
     else if (e.k === 'mouffette') spr(SPR.mouffette[f], X - 7, Y - 8, e.dir > 0);
     else if (e.k === 'vache') spr(SPR.vache[f], X - 10, Y - 11, e.dir > 0);
     else if (e.k === 'arbre') drawArbre(e, Math.round(X), Math.round(Y), cy);
-    else if (e.k === 'tracteur') { if (e.fade) g.globalAlpha = Math.max(0, 1 - e.fade); spr(SPR.tracteur[f], X - 15, Y - 23); g.globalAlpha = 1; }
+    else if (e.k === 'tracteur') drawTracteur(e, Math.round(X), Math.round(Y), f);
   }
 }
 
+// Tracteur: il suit la pente; quand il laisse passer, il tourne dans le champ (on le voit de dos) pis s'éloigne
+function drawTracteur(e, X, Y, f) {
+  if (e.state === 'part') {
+    const img = SPR.tracteurDos[f], sc = Math.max(.4, 1 - e.dy / 60);
+    const w = Math.round(img.width * sc), h = Math.round(img.height * sc);
+    if (e.dy > 34) g.globalAlpha = Math.max(0, 1 - (e.dy - 34) / 14);
+    g.drawImage(img, X - (w >> 1), Math.round(Y - 2 - Math.min(5, e.dy * .12)) - h, w, h); g.globalAlpha = 1;
+    return;
+  }
+  const a = Math.atan((gyAt(G.lev, e.x + 12) - gyAt(G.lev, e.x - 7)) / 19);
+  sprPenche(SPR.tracteur[f], X, Y, a, -15, -23);
+}
 // Arbre au bord du chemin: debout, qui craque, qui tombe (il pivote sur sa base), pis couché en travers
 function drawArbre(e, X, Y, cy) {
   const pal = G.pal, tr = '#6a4426', trD = '#4e3018';
@@ -2745,14 +2808,8 @@ function drawPlayer(cx, cy) {
   // pivot: la roue d'en arrière en wheelie, sinon le milieu du bicycle
   const piv = wa > .01 ? { x: Math.round(px - P.face * 9), a: P.angle - P.face * wa, ox: -7 } : { x: px, a: P.angle, ox: -16 };
   const py = Math.round(P.y - cy);
-  if (Math.abs(piv.a) > .02 && !G.paused && SQ_ETATS.includes(G.state)) {
-    let x = piv.x, y = py, z = 1;
-    if (TXT_ZOOM) { const Z = TXT_ZOOM; x = Z.tx + (x - Z.ax) * Z.z; y = Z.ty + (y - Z.ay) * Z.z; z = Z.z; }
-    const teintes = [];
-    if (G.pal.night) teintes.push('rgba(10,14,50,.18)');
-    if (G.event && G.event.ambient === 'pluie' && G.state !== 'titre') teintes.push('rgba(50,60,80,.16)');
-    SQ.push({ img, x, y, z, a: piv.a, flip: P.face < 0, ox: piv.ox, oy: -36, teintes });
-  } else {
+  if ((Math.abs(piv.a) > .02 || SQ.length) && SQ_ETATS.includes(G.state)) sprPenche(img, piv.x, py, piv.a, piv.ox, -36, P.face < 0);
+  else {
     g.save(); g.translate(piv.x, py); g.rotate(piv.a);
     if (P.face < 0) g.scale(-1, 1);
     g.drawImage(img, piv.ox, -36); g.restore();
@@ -2829,7 +2886,8 @@ function drawWorld() {
   if (G.state === 'descend' && G.police && G.police.actif) {
     // le devant de l'auto est à dx en arrière de Groloup; si la place manque, l'arrière dépasse de l'écran
     const px = P.x + G.police.dx, sol = x => gyAt(G.lev, clamp(x, 0, G.lev.L));
-    spr(SPR.police[((G.t * 7) | 0) % 2], Math.round(px - cx), Math.round(sol(px + 38) - cy) - 33 + (((G.t * 14) | 0) % 2 ? 0 : 1));
+    const pa = Math.atan((sol(px + 60) - sol(px + 17)) / 43);
+    sprPenche(SPR.police[((G.t * 7) | 0) % 2], Math.round(px - cx) + 39, Math.round(sol(px + 39) - cy) + (((G.t * 14) | 0) % 2 ? 0 : 1), pa, -39, -33);
     if (G.police.ditT > 0 && !G.police.fuit) txt(G.police.dit, Math.min(W - 38, Math.round(px - cx) + 36), Math.round(sol(px + 38) - cy) - 44, 5, '#ffffff', 'center');
     if (Math.random() < .6) part('px', px + 64, sol(px + 64) - 2, 30 + Math.random() * 30, -8 - Math.random() * 10, .4, G.pal.roadL);
   }
@@ -2970,7 +3028,9 @@ function startVisit() {
   G.pal = PAL[G.saison]; G.bg = buildBackground(G.pal);
   G.seed = (Math.random() * 1e9) | 0;
   G.event = G.visite === 1 ? piocher('evenements', EVENEMENTS, e => e.id === 'calme') : piocher('evenements', EVENEMENTS, e => !e.saisons || e.saisons.includes(G.saison));
-  G.up = buildUp(G.visite, G.seed, G.event, G.saison === 'nuit');
+  // un joueur qui va bien (amour en avance) voit les événements rares: arbres qui tombent, plus d'éclairs
+  G.bon = G.visite >= 3 && G.amour >= (G.visite - 1) * 15;
+  G.up = buildUp(G.visite, G.seed, G.event, G.saison === 'nuit', G.bon);
   setLevel(G.up);
   G.fauxDepart = false; G.banniere = null; G.foudre = null;
   planifierDefi();
