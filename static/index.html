@@ -1030,13 +1030,13 @@ function buildSprites() {
   SPR.stand = makeWalker(0, LOOK.groloup, true);
   SPR.bucheron = [makeBucheron(true), makeBucheron(false)];
   SPR.velo = (() => { const [c, x] = mkCanvas(32, 36); drawBikeFrame(x, 0, 0, 0); return c; })();
-  // le père de Didi: casquette, moustache grise, chemise à carreaux, bras croisés (regarde vers la gauche)
-  const pere = ['...cccc...', '..cccccc..', '.Vcccccc..', '..sesshh..', '..sssshh..', '..MMss.h..', '...sss....',
-    '..rRrRrr..', '.rRrRrRrR.', '.RrRrRrRr.', '.rAAAAAAs.', '.sAAAAAAR.', '.rRrRrRrR.', '..RrRrRr..', '..bbbbbb..',
-    '..pppppp..', '..ppp.pp..', '..ppp.pp..', '..ppp.pp..', '..ppp.pp..', '.kkkk.kkk.'];
-  const perePal = { c: '#b8282a', V: '#7a1a1a', s: '#e8b890', e: '#1a1010', h: '#b8b4ac', M: '#9a948c', r: '#c83a2a', R: '#2a1a1a',
+  // le père de Didi: casquette, cheveux gris, chemise à carreaux, bras croisés (regarde vers la gauche) — aussi grand que Groloup
+  const pere = ['...cccccc...', '..cccccccc..', '.VVccccccc..', '..sssshhh...', '..sessshh...', '..sssssh....', '..smsss.....', '...ssss.....',
+    '..rRrRrRrR..', '.rRrRrRrRrR.', '.RrRrRrRrRr.', '.rRrRrRrRrR.', '.RsAAAAAArR.', '.rAAAAAAsRr.', '.RrRrRrRrRr.', '..rRrRrRrR..', '..RrRrRrRr..', '..bbbbbbbb..',
+    '..pppppppp..', '..pppp.ppp..', '..pppp.ppp..', '..pppp.ppp..', '..pppp.ppp..', '..pppp.ppp..', '..pppp.ppp..', '..pppp.ppp..', '.kkkkk.kkkk.'];
+  const perePal = { c: '#b8282a', V: '#7a1a1a', s: '#e8b890', e: '#1a1010', h: '#b8b4ac', m: '#8a3020', r: '#c83a2a', R: '#2a1a1a',
     A: '#a8301f', b: '#3a2a1a', p: '#4a5a3a', k: '#2a1a10' };
-  const hoche = ['..........'].concat(pere.slice(0, 6).map(r => r.replace('e', 's')), pere.slice(7));
+  const hoche = ['............'].concat(pere.slice(0, 7).map(r => r.replace('e', 's')), pere.slice(8));
   SPR.pere = [ascii(pere, perePal), ascii(hoche, perePal)];
 
   const heart = ['.XX.XX.', 'XWXXXXX', 'XXXXXXX', '.XXXXX.', '..XXX..', '...X...'];
@@ -2086,7 +2086,7 @@ function updateDefi(dt) {
           Sound.fx('tchak'); vibrer(40); G.shake = .1;
           part('buche', lx - 2, ly, -45, -70, .7); part('buche', lx + 2, ly, 45, -70, .7);
           burst(lx, ly, 6, '#e0b070', 50);
-          pop('Tchak!', lx + 10, ly - 4, '#ffe060', 6, .8);
+          pop('Tchak!', lx + 4, ly - 30, '#ffe060', 6, .8);
         } else {
           D.rates++; D.coupT = .55; D.cd = .7;
           Sound.fx('manque'); vibrer(20);
@@ -2553,7 +2553,7 @@ function drawPere(cx, cy) {
   }
   // le père (il hoche la tête quand il est content)
   const hoche = pr.nod > 0 && ((pr.nod * 5) | 0) % 2 && (!D || D.ok);
-  spr(SPR.pere[hoche ? 1 : 0], X - 3, sol(pr.x) - 21);
+  spr(SPR.pere[hoche ? 1 : 0], X - 6, sol(pr.x) - 27);
 }
 // la pompe à côté de la roue d'en avant (crevaison), la chaîne qui pend (chaîne débarquée)
 function drawDefiAvant(cx, cy) {
