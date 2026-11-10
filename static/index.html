@@ -116,7 +116,7 @@ const DIALOGUES = {
     [['Groloup', "Me revoilà! Le rang 14 a pas eu raison de moi!"], ['Didi', "Il a eu raison de tes cheveux, par exemple."]],
     [['Groloup', "Coucou Didi! Devine qui vient de monter le rang 14!"], ['Didi', "Je t'entends souffler depuis la deuxième côte."]],
     [['Groloup', "Salut! J'ai pris le chemin le plus court... y en a juste un."]],
-    [['Groloup', "Ton père est-tu là?"], ['Didi', "Non, il est au bois."], ['Groloup', "Ouf! Je voulais pas repartir avec du plomb dans les fesses."]],
+    { l: [['Groloup', "Ton père est-tu là?"], ['Didi', "Non, il est au bois."], ['Groloup', "Ouf! Je voulais pas repartir avec du plomb dans les fesses."]], sauf: 'pere' },
     [['Groloup', "Surprise, Didi!"], ['Didi', "Bon! Groloup qui vient encore er'tontir sans avertir!"]],
     { l: [['Groloup', "Bonjour Didi! J'ai mis de la brillantine dans mes cheveux!"], ['Didi', "Ça brille plus que ton bicycle!"]], jour: true },
     { l: [['Groloup', "Allô Didi! J'ai fait le train de bonne heure pour venir te voir."], ['Didi', "Ça paraît, tu sens l'étable!"]], jour: true },
@@ -145,6 +145,25 @@ const DIALOGUES = {
     [['Groloup', "Mon pneu a lâché en chemin."], ['Didi', "Pauvre toi! T'as marché?"], ['Groloup', "Non, non! J'ai pompé. Soixante coups. Je les ai comptés deux fois."]],
     [['Didi', "T'es ben essoufflé!"], ['Groloup', "J'ai regonflé un pneu au complet."], ['Didi', "Avec ta pompe?"], ['Groloup', "...Elle aussi, elle est à bout de souffle."]],
   ],
+  // chaîne débarquée (mini-jeu)
+  chaine: [
+    [['Groloup', "Ma chaîne a sauté dans la grosse côte."], ['Didi', "Pis?"], ['Groloup', "Je l'ai remise en deux temps trois mouvements."], ['Didi', "T'as du noir sur le front."], ['Groloup', "Ça, c'est le troisième mouvement."]],
+    [['Didi', "Touche pas à mon tablier, t'as les mains toutes noires!"], ['Groloup', "Ma chaîne a débarqué."], ['Didi', "Pis tu l'as remise?"], ['Groloup', "Oui. J'ai gardé un peu de graisse en souvenir."]],
+    [['Groloup', "J'ai réparé mon bicycle en pleine côte!"], ['Didi', "T'es rendu mécanicien?"], ['Groloup', "Pour les chaînes, oui. Pour le reste, je prie."]],
+  ],
+  // le père de Didi fendait du bois (mini-jeu)
+  bois: {
+    ok: [
+      [['Didi', "Je t'ai vu fendre du bois avec mon père!"], ['Groloup', "Il m'a fait un signe de tête."], ['Didi', "Un signe de tête! D'habitude, il fait ça juste au curé."]],
+      [['Groloup', "Ton père m'a fait fendre cinq bûches."], ['Didi', "Pis?"], ['Groloup', "Il a dit « pas pire pantoute »."], ['Didi', "Mon doux. Va falloir que tu restes à souper."]],
+      [['Groloup', "Ton père pis moi, on a jasé."], ['Didi', "Qu'est-ce qu'il a dit?"], ['Groloup', "Rien. Mais il l'a dit d'un air content."]],
+    ],
+    rate: [
+      [['Groloup', "J'ai aidé ton père à fendre du bois."], ['Didi', "Il dit que t'as surtout fendu le billot."], ['Groloup', "Le billot avait besoin d'aide, lui aussi."]],
+      [['Didi', "J'ai vu ça de la fenêtre. La hache est encore plantée dans le billot."], ['Groloup', "Je l'ai laissée là pour la prochaine fois."]],
+      [['Didi', "Mon père a dit « Hmm »."], ['Groloup', "C'est bon ou c'est pas bon?"], ['Didi', "Avec lui, on le sait jamais."]],
+    ],
+  },
   // bobos: selon ce qui l'a fait tomber le plus souvent
   bobos: {
     arbre: [
@@ -281,7 +300,7 @@ function echangeOk(x, ctx) {
   if (Array.isArray(x)) return true;
   if (x.jour && ctx.soir) return false;
   if (x.soir && !ctx.soir) return false;
-  if (x.sauf && ctx.evenement === x.sauf) return false;
+  if (x.sauf && (ctx.evenement === x.sauf || ctx.defi === x.sauf)) return false;
   if (x.si === 'encore' && !ctx.encore) return false;
   if (x.si === 'peu' && !(ctx.fleurs > 0 && ctx.fleurs <= 4)) return false;
   if (x.min && (ctx.nb || 0) < x.min) return false;
@@ -736,6 +755,10 @@ const Sound = {
       case 'boum': this.osc('sine', 95, t, .35, .5, null, 38); this.noise(t, .3, .28, 320, 'lowpass'); break;
       case 'gronde': this.noise(t, .9, .12, 160, 'lowpass'); this.osc('sine', 55, t, .8, .14, null, 40); break;
       case 'tonnerre': this.noise(t, .1, .4, 3000, 'highpass'); this.noise(t + .04, 1.3, .38, 260, 'lowpass'); this.osc('sine', 70, t, 1.1, .35, null, 32); break;
+      case 'clac': this.osc('pulse25', 900, t, .05, .1, null, 300); this.noise(t, .08, .2, 3000, 'highpass'); this.osc('pulse25', 600, t + .09, .06, .08, null, 200); break;
+      case 'cliquetis': this.osc('pulse12', 2300 + Math.random() * 400, t, .03, .05); this.noise(t, .025, .08, 5000, 'highpass'); break;
+      case 'tchak': this.noise(t, .12, .35, 1300, 'bandpass'); this.osc('sine', 190, t, .12, .32, null, 60); break;
+      case 'manque': this.osc('sawtooth', 150, t, .18, .1, null, 85); this.noise(t, .15, .16, 400, 'lowpass'); break;
       case 'pompe': this.noise(t, .07, .13, 1700, 'bandpass'); this.osc('pulse25', 300, t, .07, .05, null, 520); break;
       case 'feu': this.noise(t, .6, .18, 500, 'lowpass'); this.osc('sine', 300, t, .5, .05, null, 80); break;
       case 'menu': this.osc('pulse25', 880, t, .05, .08); break;
@@ -967,6 +990,18 @@ function makeWalker(f, look, standing) {
   drawRiderFront(x, o, { hip, sh, hand: standing ? [14, 24] : hand, p1: f1 });
   return c;
 }
+// Groloup qui fend du bois: hache levée (haut) ou qui frappe
+function makeBucheron(haut) {
+  const [c, x] = mkCanvas(32, 36);
+  const L = LOOK.groloup, hip = [12, 25], sh = [13, 16];
+  const hand = haut ? [10, 8] : [20, 22];
+  const manche = '#8a5a30', fer = '#9aa2ac', fil = '#e0e6ec';
+  LN2(x, hip[0], hip[1], 9, 35, L.pantsD); x.fillStyle = L.shoe; x.fillRect(8, 34, 3, 2);
+  if (haut) { LN(x, 10, 8, 5, 2, manche); rect2(x, 2, 0, 4, 3, fer); rect2(x, 2, 0, 1, 3, fil); }
+  drawRiderFront(x, { look: L, head: haut ? 'groloupEffort' : 'groloupHappy', plaid: false, leg: 5.5 }, { hip, sh, hand, p1: [15, 35] });
+  if (!haut) { LN(x, 20, 22, 24, 25, manche); rect2(x, 23, 25, 4, 3, fer); rect2(x, 23, 27, 4, 1, fil); }
+  return c;
+}
 function makeTandem(f) {
   const [c, x] = mkCanvas(46, 36);
   const crank = f / 8 * Math.PI * 2, wheelA = -f / 8 * Math.PI;
@@ -993,6 +1028,16 @@ function buildSprites() {
   SPR.calm = makeCyclist('groloup', 'happy', 0, LOOK.groloup);
   for (let f = 0; f < 6; f++) SPR.walk.push(makeWalker(f, LOOK.groloup));
   SPR.stand = makeWalker(0, LOOK.groloup, true);
+  SPR.bucheron = [makeBucheron(true), makeBucheron(false)];
+  SPR.velo = (() => { const [c, x] = mkCanvas(32, 36); drawBikeFrame(x, 0, 0, 0); return c; })();
+  // le père de Didi: casquette, moustache grise, chemise à carreaux, bras croisés (regarde vers la gauche)
+  const pere = ['...cccc...', '..cccccc..', '.Vcccccc..', '..sesshh..', '..sssshh..', '..MMss.h..', '...sss....',
+    '..rRrRrr..', '.rRrRrRrR.', '.RrRrRrRr.', '.rAAAAAAs.', '.sAAAAAAR.', '.rRrRrRrR.', '..RrRrRr..', '..bbbbbb..',
+    '..pppppp..', '..ppp.pp..', '..ppp.pp..', '..ppp.pp..', '..ppp.pp..', '.kkkk.kkk.'];
+  const perePal = { c: '#b8282a', V: '#7a1a1a', s: '#e8b890', e: '#1a1010', h: '#b8b4ac', M: '#9a948c', r: '#c83a2a', R: '#2a1a1a',
+    A: '#a8301f', b: '#3a2a1a', p: '#4a5a3a', k: '#2a1a10' };
+  const hoche = ['..........'].concat(pere.slice(0, 6).map(r => r.replace('e', 's')), pere.slice(7));
+  SPR.pere = [ascii(pere, perePal), ascii(hoche, perePal)];
 
   const heart = ['.XX.XX.', 'XWXXXXX', 'XXXXXXX', '.XXXXX.', '..XXX..', '...X...'];
   SPR.heart = ascii(heart, { X: '#ff4d6d', W: '#ffd0da' });
@@ -1490,7 +1535,7 @@ const G = {
   state: 'titre', t: 0, visite: 1, amour: 0, lev: null, pal: null, bg: null, saison: 'printemps',
   camX: 0, camY: 0, shake: 0, parts: [], pops: [], stats: null, totalFleurs: 0, menuSel: 0, pet: 0,
 };
-const inp = { left: false, right: false, jump: false, jumpP: false, toolP: false, boostP: false, okP: false, upP: false, downP: false, tap: null };
+const inp = { leftP: false, rightP: false, left: false, right: false, jump: false, jumpP: false, toolP: false, boostP: false, okP: false, upP: false, downP: false, tap: null };
 const P = {};
 const HW = 6, PH = 20;
 
@@ -1939,41 +1984,122 @@ function updateFoudre(dt) {
   F.cible = x; F.t = 0; F.frappe = false; Sound.fx('gronde');
 }
 
-// ---------------- CREVAISON (mini-jeu, au plus une fois par partie) ----------------
-function tirerCrevaison(depuis) { return Math.random() < .75 ? depuis + ((Math.random() * 4) | 0) : 0; }
-function planifierCrevaison() {
-  G.crev = null; G.crevX = 0;
+// ---------------- DÉFIS (mini-jeux, chacun au plus une fois par partie, un seul par visite) ----------------
+// crev: crevaison (taper pour pomper) · chaine: chaîne débarquée (alterner gauche/droite) · bois: le père de Didi (taper dans le vert)
+const DEFIS = ['crev', 'chaine', 'bois'];
+function planDefis(debut) {
+  const libres = [];
+  for (let v = Math.max(2, debut); v <= Math.max(7, debut + 4); v++) libres.push(v);
+  const p = {};
+  for (const d of DEFIS) p[d] = Math.random() < .75 && libres.length ? libres.splice((Math.random() * libres.length) | 0, 1)[0] : 0;
+  return p;   // numéro de visite, 0 = pas cette partie, -1 = déjà fait
+}
+function planifierDefi() {
+  G.defi = null; G.defiPlan = null;
   const p = G.partie, lev = G.lev;
-  if (!p || p.crevFaite || p.crevVisite !== G.visite) return;
-  const libre = x => hasGround(lev, x) && x > 420 && x < lev.didiX - 420
-    && !lev.creeks.some(c => x > c.x0 - 70 && x < c.x1 + 50)
-    && !lev.solids.some(s => x > s.x0 - 40 && x < s.x1 + 40)
-    && !lev.zones.some(z => x > z.x0 - 25 && x < z.x1 + 25)
-    && !lev.cps.some(c => Math.abs(c.x - x) < 40)
-    && !lev.enemies.some(e => e.x != null && Math.abs(e.x - x) < 90);
-  for (let k = 0; k < 80; k++) { const x = lev.L * (.3 + Math.random() * .4); if (libre(x)) { G.crevX = x; return; } }
-  p.crevVisite = G.visite + 1;   // pas de place cette fois-ci: ce sera pour la prochaine visite
+  if (!p || !p.defis) return;
+  const dus = DEFIS.filter(d => p.defis[d] === G.visite);
+  if (!dus.length) return;
+  const type = dus[0];
+  for (const d of dus.slice(1)) p.defis[d] = G.visite + 1;
+  const proche = (x, r) => lev.solids.some(s => x > s.x0 - r && x < s.x1 + r) || lev.enemies.some(e => e.x != null && Math.abs(e.x - x) < r + 40);
+  let x = 0;
+  if (type === 'bois') {
+    // juste avant la maison: le père de Didi fend du bois au bord du chemin
+    const bx = lev.didiX - 165;
+    if (!proche(bx, 50) && !lev.creeks.some(c => bx > c.x0 - 80 && bx < c.x1 + 40)) x = bx;
+  } else {
+    const libre = x => hasGround(lev, x) && x > 420 && x < lev.didiX - 420
+      && !lev.creeks.some(c => x > c.x0 - 70 && x < c.x1 + 50) && !proche(x, 40)
+      && !lev.zones.some(z => x > z.x0 - 25 && x < z.x1 + 25) && !lev.cps.some(c => Math.abs(c.x - x) < 40);
+    for (let k = 0; k < 80 && !x; k++) { const t = lev.L * (.3 + Math.random() * .4); if (libre(t)) x = t; }
+  }
+  if (!x) { p.defis[type] = G.visite + 1; return; }   // pas de place: ce sera pour la prochaine visite
+  G.defiPlan = { type, x };
+  if (type === 'bois') { lev.pere = { x, n: 0, nod: 0 }; lev.items = lev.items.filter(it => it.x < x - 60 || it.x > x + 45); }
 }
-function startCrevaison() {
-  G.crev = { phase: 'psst', t: 0, air: 0, coups: 0, duree: 0, coupT: 0 };
-  G.crevX = 0; G.partie.crevFaite = true;
-  P.vx = 0; P.vy = 0; P.walking = false; P.boostT = 0; P.pose = 'debout'; P.inv = 0;
+function verifierDefi() {
+  const DP = G.defiPlan;
+  if (!DP || G.defi || !P.onGround) return;
+  if (DP.type === 'bois') { if (P.x >= DP.x - 26) startDefi(); return; }
+  if (P.x >= DP.x && P.x < DP.x + 120) startDefi();
+  else if (P.x >= DP.x + 120) { G.partie.defis[DP.type] = G.visite + 1; G.defiPlan = null; }
+}
+function startDefi() {
+  const DP = G.defiPlan; G.defiPlan = null;
+  G.partie.defis[DP.type] = -1;
+  const D = G.defi = { type: DP.type, phase: 'debut', t: 0, duree: 0, val: 0, coups: 0, rates: 0, cd: 0, coupT: 0, haut: true };
+  P.vx = 0; P.vy = 0; P.walking = false; P.boostT = 0; P.inv = 0; P.wheelie = false;
   if (G.foudre) { G.foudre.cible = null; G.foudre.cd = 6; }
-  Sound.fx('pschit'); G.shake = .2; vibrer(120); Sound.play('boss');
+  if (D.type === 'bois') {
+    P.x = DP.x - 26; P.y = gyAt(G.lev, P.x); P.angle = 0; P.pose = 'hache';
+    D.ph = 0; D.vit = 3.2; D.zone = .16; D.pos = .5; D.logT = 0;
+    Sound.fx('blip');
+  } else {
+    P.pose = 'debout';
+    if (D.type === 'crev') { Sound.fx('pschit'); G.shake = .2; vibrer(120); }
+    else { Sound.fx('clac'); G.shake = .15; vibrer(80); D.dernier = 0; }
+    Sound.play('boss');
+  }
 }
-function updateCrevaison(dt) {
-  const c = G.crev; c.t += dt; c.coupT = Math.max(0, c.coupT - dt);
-  if (c.phase === 'psst') {
-    if (Math.random() < .6) part('px', P.x + 9, P.y - 3, 25 + Math.random() * 40, -10 - Math.random() * 30, .4, '#ffffff');
-    if (c.t > 1.1) { c.phase = 'pompe'; c.t = 0; }
-  } else if (c.phase === 'pompe') {
-    c.duree += dt; c.air = Math.max(0, c.air - .09 * dt);
-    if (inp.jumpP || inp.okP) { c.air += .07; c.coups++; c.coupT = .12; Sound.fx('pompe'); vibrer(15); }
-    if (c.air >= 1) {
-      c.air = 1; c.phase = 'fini'; c.t = 0; G.stats.crevaison = c.duree; Sound.fx('repos'); Sound.play('montee' + musicNo());
-      if (c.duree < 3.5) { c.bonus = true; addAmour(1); }
+function finirDefi() {
+  const D = G.defi;
+  D.val = 1; D.phase = 'fini'; D.t = 0; D.haut = true;
+  Sound.fx('repos'); Sound.play('montee' + musicNo());
+  if (D.type === 'bois') {
+    D.ok = D.rates <= 3;
+    const pr = G.lev.pere; pr.nod = 1.6;
+    if (D.ok) addAmour(2);
+  } else if (D.duree < 3.5) { D.bonus = true; addAmour(1); }
+  G.stats.defi = { type: D.type, duree: D.duree, ok: D.type !== 'bois' || D.ok };
+}
+function updateDefi(dt) {
+  const D = G.defi; D.t += dt; D.coupT = Math.max(0, D.coupT - dt); D.cd = Math.max(0, D.cd - dt);
+  const tape = inp.jumpP || inp.okP;
+  if (D.phase === 'debut') {
+    if (D.type === 'crev' && Math.random() < .6) part('px', P.x + 9, P.y - 3, 25 + Math.random() * 40, -10 - Math.random() * 30, .4, '#ffffff');
+    if (D.t > (D.type === 'bois' ? 2.2 : 1.1)) { D.phase = 'jeu'; D.t = 0; if (D.type === 'bois') Sound.play('boss'); }
+    return;
+  }
+  if (D.phase === 'jeu') {
+    D.duree += dt;
+    if (D.type === 'crev') {
+      D.val = Math.max(0, D.val - .09 * dt);
+      if (tape) { D.val += .07; D.coups++; D.coupT = .12; Sound.fx('pompe'); vibrer(15); }
+    } else if (D.type === 'chaine') {
+      D.val = Math.max(0, D.val - .07 * dt);
+      const l = inp.leftP, r = inp.rightP;
+      for (const c of [l ? -1 : 0, r ? 1 : 0]) {
+        if (!c || c === D.dernier) continue;
+        D.dernier = c; D.val += .075; D.coups++; D.coupT = .1; Sound.fx('cliquetis'); vibrer(12);
+        if (Math.random() < .5) part('px', P.x - 2, P.y - 8, (Math.random() - .5) * 40, -30 - Math.random() * 30, .4, '#c8d0d8');
+      }
+    } else {
+      D.ph += dt * D.vit; D.pos = .5 + .5 * Math.sin(D.ph);
+      D.logT = Math.max(0, D.logT - dt);
+      if (tape && D.cd <= 0) {
+        D.coups++; D.haut = false;
+        const pr = G.lev.pere, lx = pr.x - 15, ly = gyAt(G.lev, lx) - 8;
+        if (Math.abs(D.pos - .5) < D.zone) {
+          D.val = ++pr.n / 5; D.coupT = .3; D.cd = .35; D.logT = .3;
+          D.vit += .45; D.zone = Math.max(.09, D.zone - .015);
+          Sound.fx('tchak'); vibrer(40); G.shake = .1;
+          part('buche', lx - 2, ly, -45, -70, .7); part('buche', lx + 2, ly, 45, -70, .7);
+          burst(lx, ly, 6, '#e0b070', 50);
+          pop('Tchak!', lx + 10, ly - 4, '#ffe060', 6, .8);
+        } else {
+          D.rates++; D.coupT = .55; D.cd = .7;
+          Sound.fx('manque'); vibrer(20);
+          pop('Flûte!', P.x - 14, P.y - 26, '#ffe060', 6, .8);
+        }
+      }
+      if (D.coupT <= 0) D.haut = true;
     }
-  } else if (c.t > 1.2) { G.crev = null; P.pose = null; P.inv = 1; pop('Repartons!', P.x, P.y - 36); }
+    if (D.val >= 1) finirDefi();
+    return;
+  }
+  if (D.type === 'bois') { const pr = G.lev.pere; pr.nod = Math.max(0, pr.nod - dt); }
+  if (D.t > (D.type === 'bois' ? 2.4 : 1.2)) { G.defi = null; P.pose = null; P.inv = 1; pop('Repartons!', P.x, P.y - 36); }
 }
 
 function updateItems(dt) {
@@ -2016,7 +2142,7 @@ function updateItems(dt) {
 function updateParticles(dt) {
   for (const p of G.parts) {
     p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt;
-    if (p.kind === 'px' || p.kind === 'plume') p.vy += 220 * dt;
+    if (p.kind === 'px' || p.kind === 'plume' || p.kind === 'buche') p.vy += 220 * dt;
     if (p.kind === 'sueur') p.vy += 160 * dt;
     if (p.kind === 'feuille' || p.kind === 'petale') { p.vx = Math.sin(p.life * 3 + p.x * .05) * 18 - 8; }
     if (p.kind === 'fw') p.vy += 60 * dt;
@@ -2403,26 +2529,96 @@ function drawFoudre(cx, cy) {
     }
   }
 }
-// Crevaison: la pompe à côté de la roue d'en avant, pis le panneau du mini-jeu
-function drawPompe(cx, cy) {
-  const c = G.crev; if (!c) return;
-  const X = Math.round(P.x - cx) + 17, Y = Math.round(P.y - cy);
-  const bas = c.coupT > 0 ? 3 : 0;   // la poignée descend à chaque coup
-  if (c.air < 1) rect(X - 13, Y - 1, 9, 1, '#1a1a1a');   // pneu à plat
-  rect(X, Y - 9, 3, 9, '#8a929c'); rect(X, Y - 9, 1, 9, '#c8d0d8'); rect(X - 1, Y - 1, 5, 1, '#3a3a44');
-  rect(X + 1, Y - 14 + bas, 1, 5 - bas, '#c8d0d8'); rect(X - 1, Y - 15 + bas, 5, 1, '#d8342a');
-  LN(g, X, Y - 2, X - 5, Y - 3, '#1a1a1a');
+// ---- défis: ce qui se dessine dans le monde ----
+// le père de Didi, son billot, ses piles de bois (avant Groloup)
+function drawPere(cx, cy) {
+  const lev = G.lev, pr = lev.pere; if (!pr) return;
+  const X = Math.round(pr.x - cx); if (X < -60 || X > W + 60) return;
+  const D = G.defi && G.defi.type === 'bois' ? G.defi : null, sol = x => Math.round(gyAt(lev, x) - cy);
+  // pile de bûches rondes (à droite du père), pis les bûches fendues
+  const reste = 5 - pr.n;
+  for (let i = 0; i < reste; i++) {
+    const bx = X + 10 + (i % 3) * 4 + (i >= 3 ? 2 : 0), by = sol(pr.x + 12) - 4 - (i >= 3 ? 4 : 0);
+    rect(bx, by, 4, 4, '#6a4426'); rect(bx + 1, by + 1, 2, 2, '#c8945a');
+  }
+  for (let i = 0; i < pr.n * 2; i++) rect(X + 24 + (i % 4) * 3, sol(pr.x + 28) - 5 - ((i / 4) | 0) * 2, 2, 5, i % 2 ? '#c89058' : '#a87038');
+  // billot
+  const bx = X - 20, by = sol(pr.x - 15);
+  rect(bx, by - 5, 9, 5, '#7a4a26'); rect(bx, by - 5, 9, 1, '#c8945a'); rect(bx + 2, by - 4, 1, 4, '#5a3418'); rect(bx + 6, by - 4, 1, 4, '#5a3418');
+  if (D && D.phase !== 'fini') {
+    if (D.logT <= 0 && pr.n < 5) { rect(bx + 2, by - 11, 5, 6, '#b07a48'); rect(bx + 2, by - 11, 1, 6, '#6a4426'); rect(bx + 6, by - 11, 1, 6, '#6a4426'); rect(bx + 3, by - 11, 3, 1, '#e0b070'); }
+  } else {
+    // la hache plantée dans le billot
+    LN(g, bx + 4, by - 6, bx, by - 14, '#8a5a30'); rect(bx + 3, by - 7, 4, 2, '#9aa2ac');
+  }
+  // le père (il hoche la tête quand il est content)
+  const hoche = pr.nod > 0 && ((pr.nod * 5) | 0) % 2 && (!D || D.ok);
+  spr(SPR.pere[hoche ? 1 : 0], X - 3, sol(pr.x) - 21);
 }
-function drawCrevaison() {
-  const c = G.crev;
-  panel(70, 40, 180, 48);
-  txt('CREVAISON!', 160, 45, 8, '#ffe060', 'center');
-  if (c.phase === 'psst') { txt('Pssshhh...', 160, 64, 6, '#ffffff', 'center'); return; }
+// la pompe à côté de la roue d'en avant (crevaison), la chaîne qui pend (chaîne débarquée)
+function drawDefiAvant(cx, cy) {
+  const D = G.defi; if (!D) return;
+  if (D.type === 'crev') {
+    const X = Math.round(P.x - cx) + 17, Y = Math.round(P.y - cy);
+    const bas = D.coupT > 0 ? 3 : 0;   // la poignée descend à chaque coup
+    if (D.val < 1) rect(X - 13, Y - 1, 9, 1, '#1a1a1a');   // pneu à plat
+    rect(X, Y - 9, 3, 9, '#8a929c'); rect(X, Y - 9, 1, 9, '#c8d0d8'); rect(X - 1, Y - 1, 5, 1, '#3a3a44');
+    rect(X + 1, Y - 14 + bas, 1, 5 - bas, '#c8d0d8'); rect(X - 1, Y - 15 + bas, 5, 1, '#d8342a');
+    LN(g, X, Y - 2, X - 5, Y - 3, '#1a1a1a');
+  } else if (D.type === 'chaine' && D.phase !== 'fini') {
+    const pend = D.phase === 'debut' ? Math.min(1, D.t / .25) * 9 : (1 - D.val) * 9;
+    g.save(); g.translate(Math.round(P.x - cx), Math.round(P.y - cy)); g.rotate(P.angle);
+    for (let i = 0; i <= 12; i++) {
+      const t = i / 12, x = lerp(-1, -9, t), y = Math.min(-1, lerp(-7, -6, t) + pend * 4 * t * (1 - t));
+      g.fillStyle = i % 2 ? '#8a8a94' : '#3a3a44'; g.fillRect(Math.round(x), Math.round(y), 1, 1);
+    }
+    g.restore();
+  }
+}
+// ---- défis: le panneau du mini-jeu ----
+function flecheDefi(x, y, dir, allume) {
+  const c = allume ? '#ffe060' : '#5a4a7a';
+  for (let k = 0; k < 4; k++) rect(dir < 0 ? x + k : x + 3 - k, y + 3 - k, 1, k * 2 + 1, c);
+}
+function drawDefi() {
+  const D = G.defi, bois = D.type === 'bois';
+  const titres = { crev: 'CREVAISON!', chaine: 'Chaîne débarquée!', bois: 'COUP DE MAIN!' };
+  panel(70, 40, 180, bois ? 54 : 48);
+  txt(titres[D.type], 160, 45, D.type === 'chaine' ? 7 : 8, '#ffe060', 'center');
+  if (D.phase === 'debut') {
+    if (D.type === 'crev') txt('Pssshhh...', 160, 64, 6, '#ffffff', 'center');
+    else if (D.type === 'chaine') txt('Clac!', 160, 64, 6, '#ffffff', 'center');
+    else { txt('« Hé, le jeune! Fends-moi', 160, 60, 5, '#ffffff', 'center'); txt('donc cinq bûches. »', 160, 70, 5, '#ffffff', 'center'); }
+    return;
+  }
   rect(90, 59, 140, 9, '#ffffff'); rect(91, 60, 138, 7, '#1e1a3a');
-  rect(91, 60, Math.round(138 * c.air), 7, c.air > .7 ? '#7ae07a' : '#5ac8ff');
-  for (let k = 1; k < 4; k++) rect(91 + Math.round(138 * k / 4), 60, 1, 7, 'rgba(0,0,0,.35)');
-  if (c.phase === 'pompe') { if (((G.t * 4) | 0) % 2 || c.coups > 0) txt(touchMode ? 'Tape SAUTE pour pomper!' : 'Tape ESPACE pour pomper!', 160, 74, 5, '#ffffff', 'center'); }
-  else txt('Regonflé en ' + c.duree.toFixed(1).replace('.', ',') + ' s!' + (c.bonus ? ' +1 amour' : ''), 160, 74, 5, '#b4ff9a', 'center');
+  if (bois) {
+    const z0 = Math.round(91 + 138 * (.5 - D.zone)), zw = Math.round(138 * D.zone * 2);
+    rect(z0, 60, zw, 7, '#3f8f3a'); rect(z0, 60, zw, 1, '#7ae07a');
+    const mx = Math.round(91 + 137 * D.pos);
+    if (D.phase === 'jeu') { rect(mx - 1, 57, 3, 13, '#1c1430'); rect(mx, 58, 1, 11, '#ffffff'); }
+    for (let i = 0; i < 5; i++) { const fx = 133 + i * 12; rect(fx, 82, 7, 5, i < G.lev.pere.n ? '#c8945a' : '#3a2a4a'); if (i < G.lev.pere.n) rect(fx + 3, 82, 1, 5, '#6a4426'); }
+  } else {
+    rect(91, 60, Math.round(138 * D.val), 7, D.val > .7 ? '#7ae07a' : '#5ac8ff');
+    for (let k = 1; k < 4; k++) rect(91 + Math.round(138 * k / 4), 60, 1, 7, 'rgba(0,0,0,.35)');
+  }
+  if (D.type === 'chaine' && D.phase === 'jeu') {
+    const clign = ((G.t * 6) | 0) % 2;
+    flecheDefi(80, 60, -1, D.dernier !== -1 && (clign || D.dernier === 1));
+    flecheDefi(234, 60, 1, D.dernier !== 1 && (clign || D.dernier === -1));
+  }
+  if (D.phase === 'jeu') {
+    const msg = D.type === 'crev' ? (touchMode ? 'Tape SAUTE pour pomper!' : 'Tape ESPACE pour pomper!')
+      : D.type === 'chaine' ? 'Alterne GAUCHE et DROITE!'
+      : (touchMode ? 'Tape SAUTE dans le vert!' : 'Tape ESPACE dans le vert!');
+    if (((G.t * 4) | 0) % 2 || D.coups > 0) txt(msg, 160, 72, 5, '#ffffff', 'center');
+  } else {
+    const s = D.duree.toFixed(1).replace('.', ',');
+    const msg = D.type === 'crev' ? 'Regonflé en ' + s + ' s!' + (D.bonus ? ' +1 amour' : '')
+      : D.type === 'chaine' ? 'Remise en ' + s + ' s!' + (D.bonus ? ' +1 amour' : '')
+      : D.ok ? '« Pas pire pantoute. » +2 amour' : '« Hmm. Ça va faire. »';
+    txt(msg, 160, 72, 5, '#b4ff9a', 'center');
+  }
 }
 
 // Didi montre son humeur: bras croisés (indifférente), debout ou envoie la main, saute de joie (amoureuse)
@@ -2447,7 +2643,11 @@ function drawPlayer(cx, cy) {
   if (P.hidden) return;
   if (P.inv > 0 && ((P.inv * 14) | 0) % 2) return;
   let img;
-  if (P.pose === 'debout') img = SPR.stand;
+  if (P.pose === 'hache') {
+    // Groloup a accoté son bicycle pour fendre du bois
+    spr(SPR.velo, Math.round(P.x - cx) - 42, Math.round(gyAt(G.lev, P.x - 26) - cy) - 36);
+    img = SPR.bucheron[G.defi && !G.defi.haut ? 1 : 0];
+  } else if (P.pose === 'debout') img = SPR.stand;
   else if (P.walking) img = SPR.walk[(P.phase | 0) % 6];
   else if (G.lev.down) img = SPR.happy[(P.phase | 0) % 8];
   else img = SPR.effort[(P.phase | 0) % 8];
@@ -2475,6 +2675,7 @@ function drawParticles(cx, cy) {
       case 'vent': rect(X - 2, Y, 5, 1, p.col); break;
       case 'pet': { const r = 1 + Math.round((1 - p.life / p.max) * 3); DISC(g, X, Y, r, r, p.life / p.max > .5 ? 'rgba(190,220,150,.7)' : 'rgba(200,215,170,.45)'); break; }
       case 'pluie': rect(X, Y, 1, 3, 'rgba(190,215,240,.75)'); break;
+      case 'buche': rect(X, Y, 2, 5, '#c89058'); rect(X, Y, 2, 1, '#6a4426'); break;
       case 'sueur': spr(SPR.sueur, X, Y); break;
       case 'note': spr(SPR.note, X, Y); break;
       case 'heart': spr(SPR.heart, X - 3, Y - 3); break;
@@ -2492,7 +2693,7 @@ function cibleZoom() {
   const lev = G.lev;
   if (!lev || !ZOOM_ETATS[G.state] || lev.didiX == null || lev.didiX < 0) return { z: 1, k: 0, hx: P.x, sol: 128 };
   // crevaison: gros plan sur Groloup pis sa pompe, sous le panneau du mini-jeu
-  if (G.crev && G.state === 'monte') return { z: 1.8, k: 1, hx: P.x + 8, sol: 160 };
+  if (G.defi && G.state === 'monte') return { z: 1.8, k: 1, hx: P.x + (G.defi.type === 'bois' ? 24 : 8), sol: 160 };
   const maisons = [lev.homeX - 8, lev.didiX - 4];
   const hx = Math.abs(P.x - maisons[0]) < Math.abs(P.x - maisons[1]) ? maisons[0] : maisons[1];
   const k = clamp(W / (Math.abs(hx - P.x) + 120) - 1, 0, 1);   // 0 = loin, 1 = tout près de la maison
@@ -2530,8 +2731,9 @@ function drawWorld() {
   drawDecor(cx, cy);
   drawGround(cx, cy);
   drawEntities(cx, cy);
+  if (G.state === 'monte' || G.state === 'arrivee') drawPere(cx, cy);
   drawPlayer(cx, cy);
-  if (G.state === 'monte') { drawPompe(cx, cy); drawFoudre(cx, cy); }
+  if (G.state === 'monte') { drawDefiAvant(cx, cy); drawFoudre(cx, cy); }
   if (G.state === 'arrivee' && G.arr && G.arr.bouquet > 0 && P.pose === 'debout') drawBouquetArrivee(cx, cy);
   drawParticles(cx, cy);
   TXT_ZOOM = null;
@@ -2668,7 +2870,7 @@ function startVisit() {
   G.up = buildUp(G.visite, G.seed, G.event);
   setLevel(G.up);
   G.fauxDepart = false; G.banniere = null; G.foudre = null;
-  planifierCrevaison();
+  planifierDefi();
   G.stats = { fleurs: 0, plantes: 0, nids: 0, coeurs: 0, t: 0, mouffette: false, delta: 0, amourDebut: G.amour, pets: 0, causes: {} };
   G.parts = []; G.pops = []; G.arr = null;
   resetPlayer(G.lev.homeX + 40); P.pose = null; P.hidden = false;
@@ -2701,7 +2903,7 @@ function startArrival() {
   const L = A.lines;
   addAmour(1);
   G.vus = G.vus || {};
-  const ctx = { soir: G.saison === 'nuit', evenement: G.event ? G.event.id : null, encore: G.totalFleurs > 0, nb: 0, fleurs: st.fleurs };
+  const ctx = { defi: st.defi && st.defi.type === 'bois' ? 'pere' : null, soir: G.saison === 'nuit', evenement: G.event ? G.event.id : null, encore: G.totalFleurs > 0, nb: 0, fleurs: st.fleurs };
   const auj = ctx.soir ? 'à soir' : "aujourd'hui";
   const ajouter = ex => { if (ex) for (const l of lignesDe(ex)) L.push([l[0], l[1].replace('{auj}', auj)]); };
   const tirer = (nom, pool, extra) => piocher(nom, pool, x => echangeOk(x, Object.assign({}, ctx, extra || {})));
@@ -2712,7 +2914,12 @@ function startArrival() {
   const causes = st.causes || {}, evt = G.event;
   let ex = null;
   if (st.mouffette) { ex = tirer('mouffette', DIALOGUES.mouffette); A.bonus = (A.bonus || 0) - 1; }
-  else if (st.crevaison != null) ex = tirer('crevaison', DIALOGUES.crevaison);
+  else if (st.defi) {
+    const d = st.defi;
+    if (d.type === 'crev') ex = tirer('crevaison', DIALOGUES.crevaison);
+    else if (d.type === 'chaine') ex = tirer('chaine', DIALOGUES.chaine);
+    else ex = d.ok ? tirer('boisOk', DIALOGUES.bois.ok) : tirer('boisRate', DIALOGUES.bois.rate);
+  }
   else if (st.plantes >= 3) {
     // ce qui l'a fait tomber le plus souvent
     const top = Object.keys(causes).filter(k => DIALOGUES.bobos[k]).sort((x, y) => causes[y] - causes[x])[0];
@@ -2901,10 +3108,10 @@ function updateTitle(dt) {
     if (choix === 'continuer') {
       G.visite = G.save.visite; G.amour = G.save.amour; G.totalFleurs = G.save.fleurs || 0;
       chargerPaquets(); G.pet = G.save.pet || 0; G.vus = G.save.vus || { chanson: !!G.save.chanson }; G.partie = Object.assign({ plantes: 0, temps: 0, par: 0, coeurs: 0, ours: 0, sansFaute: 0, wheelie: 0 }, G.save.partie || {});
-      if (G.partie.crevVisite == null) G.partie.crevVisite = tirerCrevaison(G.visite);
+      if (!G.partie.defis) { G.partie.defis = planDefis(G.visite); if (G.partie.crevFaite) G.partie.defis.crev = -1; }
       G.oui = false; suivi('reprise', G.visite, { amour: Math.floor(G.amour) }); startVisit();
     } else {
-      G.visite = 1; G.amour = 0; G.totalFleurs = 0; chargerPaquets(); G.pet = 0; G.oui = false; G.vus = {}; G.partie = { plantes: 0, temps: 0, par: 0, coeurs: 0, ours: 0, sansFaute: 0, wheelie: 0, crevVisite: tirerCrevaison(2), crevFaite: false };
+      G.visite = 1; G.amour = 0; G.totalFleurs = 0; chargerPaquets(); G.pet = 0; G.oui = false; G.vus = {}; G.partie = { plantes: 0, temps: 0, par: 0, coeurs: 0, ours: 0, sansFaute: 0, wheelie: 0, defis: planDefis(2) };
       suivi('nouvelle', 1);
       startVisit();   // les instructions restent dans « Comment jouer » au menu
     }
@@ -3574,8 +3781,8 @@ document.addEventListener('keydown', e => {
   const k = KEYMAP[e.code];
   if (k || e.code === 'Enter' || e.code === 'ArrowDown') e.preventDefault();
   if (e.repeat) return;
-  if (k === 'left') inp.left = true;
-  if (k === 'right') inp.right = true;
+  if (k === 'left') { inp.left = true; inp.leftP = true; }
+  if (k === 'right') { inp.right = true; inp.rightP = true; }
   if (k === 'jump') { inp.jump = true; inp.jumpP = true; }
   if (k === 'tool') inp.toolP = true;
   if (k === 'boost') inp.boostP = true;
@@ -3628,6 +3835,8 @@ function onTouch(e) {
   if (a.J && !tState.J) { inp.jumpP = true; if (!playing()) inp.okP = true; }
   if (a.T && !tState.T) inp.toolP = true;
   if (a.B && !tState.B) inp.boostP = true;
+  if (a.L && !tState.L) inp.leftP = true;
+  if (a.R && !tState.R) inp.rightP = true;
   inp.left = a.L; inp.right = a.R; inp.jump = a.J;
   Object.assign(tState, a);
   for (const id of ['L', 'R', 'J', 'T', 'B']) $('b' + id).classList.toggle('on', a[id]);
@@ -3649,6 +3858,8 @@ function pollPad() {
   const b = i => p.buttons[i] && p.buttons[i].pressed, ax = p.axes[0] || 0;
   const now = [b(0), b(2), b(9), b(14) || ax < -.4, b(15) || ax > .4, b(1)];
   if (now[5] && !padPrev[5]) inp.boostP = true;
+  if (now[3] && !padPrev[3]) inp.leftP = true;
+  if (now[4] && !padPrev[4]) inp.rightP = true;
   inp.left = now[3] || tState.L; inp.right = now[4] || tState.R;
   if (now[0] && !padPrev[0]) { inp.jumpP = true; if (!playing()) inp.okP = true; }
   inp.jump = now[0] || tState.J || inp.jump && !padPrev[0];
@@ -3670,13 +3881,13 @@ function update(dt) {
       if ((inp.okP || inp.jumpP) && G.stateT > .4) { setState('monte'); Sound.play('montee' + musicNo()); inp.jumpP = false; }
       break;
     case 'monte': case 'descend': {
-      // crevaison: tout s'arrête le temps de pomper (le chrono aussi)
-      if (G.crev) { updateCrevaison(dt); updateParticles(dt); ambient(dt); updateCamera(dt, 105); break; }
+      // défi (crevaison, chaîne, bois): tout s'arrête le temps du mini-jeu (le chrono aussi)
+      if (G.defi) { updateDefi(dt); updateParticles(dt); ambient(dt); updateCamera(dt, 105); break; }
       const n = Math.max(1, Math.ceil(dt / (1 / 100)));
       for (let k = 0; k < n; k++) { updatePlayer(dt / n); if (k === 0) { inp.jumpP = false; inp.toolP = false; inp.boostP = false; } }
       if (G.state === 'monte') { updateEnemies(dt); G.stats.t += dt;
         if (G.event && G.event.ambient === 'pluie') updateFoudre(dt);
-        if (G.crevX && P.x >= G.crevX && P.onGround && P.x < G.crevX + 60) startCrevaison();
+        verifierDefi();
         if (G.stats.t > G.lev.parTime) { addAmour(-AMOUR.retardParSec * dt); if (!P.impatient) { P.impatient = true; pop("Didi s'impatiente...", P.x, P.y - 44, '#ff9ab0'); } } }
       updateItems(dt); updateParticles(dt); ambient(dt); updateCamera(dt, G.state === 'descend' ? W - 105 : 105);
       if (G.state === 'monte' && !G.fauxDepart && G.stats.t > .6 && (P.x < G.lev.homeX + 28 || (G.stats.t > 5 && P.x < G.lev.homeX + 70))) {
@@ -3721,7 +3932,7 @@ function render() {
     case 'badges': drawBadges(); break;
     case 'honneur': drawHonneur(); break;
     case 'intro': drawIntro(); break;
-    case 'monte': case 'descend': drawWorld(); drawHUD(); if (G.crev) drawCrevaison(); else if (G.banniere) drawBanniere(); break;
+    case 'monte': case 'descend': drawWorld(); drawHUD(); if (G.defi) drawDefi(); else if (G.banniere) drawBanniere(); break;
     case 'arrivee': {
       // un badge s'affiche en haut pendant les répliques: la jauge se tasse le temps qu'il passe
       drawWorld(); if (!(G.toasts && G.toasts.length)) drawHUD();
@@ -3768,9 +3979,9 @@ function loop(now) {
     if (!G.paused) { G.t += dt; G.stateT += dt; update(dt); }
     render();
   } catch (err) { console.error(err); }
-  inp.jumpP = inp.toolP = inp.boostP = inp.okP = inp.upP = inp.downP = false; inp.tap = null;
+  inp.jumpP = inp.toolP = inp.boostP = inp.okP = inp.upP = inp.downP = inp.leftP = inp.rightP = false; inp.tap = null;
   // boutons tactiles: seulement quand ils servent (pendant les répliques pis les cartes, on touche l'écran pour continuer)
-  const vis = playing() ? (G.crev ? 'J' : 'LRJTB') : G.state === 'finale' ? 'TB' : '';
+  const vis = playing() ? (G.defi ? (G.defi.type === 'chaine' ? 'LR' : 'J') : 'LRJTB') : G.state === 'finale' ? 'TB' : '';
   if (vis !== lastVis) { lastVis = vis; for (const id of ['L', 'R', 'J', 'T', 'B']) $('b' + id).style.display = vis.includes(id) ? '' : 'none'; }
   const rdy = G.pet >= PET.cout; if (rdy !== lastReady) { lastReady = rdy; $('bB').classList.toggle('ready', rdy); }
   requestAnimationFrame(loop);
