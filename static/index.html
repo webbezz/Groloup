@@ -86,7 +86,7 @@ function paramsVisite(n) {
     ruisseaux: n < 2 ? 0 : n < 5 ? 1 : 2,
     poids: {
       roche: 3, nid: 3, boue: 2, ours: 1 + d * 3, oiseau: 3 + d * 1.5, chien: 1 + d * 1.5, vache: .6 + d * .4, tracteur: n < 2 ? 0 : .8,
-      mouffette: n < 2 ? 0 : 1 + d, foin: 2.5, billot: d * 2, pommier: 2.5, fleurs: 4,
+      mouffette: n < 2 ? 0 : 1 + d, arbre: 2.5, billot: d * 2, pommier: 2.5, fleurs: 4,
     },
   };
 }
@@ -138,8 +138,25 @@ const DIALOGUES = {
     [['Didi', "T'as mangé des binnes pour déjeuner, toi!"], ['Groloup', "Comment tu le sais?"], ['Didi', "Tout le rang 14 le sait!"]],
     [['Didi', "Les corneilles se sont envolées toutes en même temps!"], ['Groloup', "Un coup de vent... qui venait pas de loin."]],
   ],
+  // crevaison (mini-jeu, au plus une fois par partie)
+  crevaison: [
+    [['Groloup', "J'ai fait une crevaison dans la grosse côte!"], ['Didi', "Pis t'as réparé ça tout seul?"], ['Groloup', "Avec ma pompe... pis une bonne douzaine de « flûte »."]],
+    [['Didi', "T'as les mains noires comme un poêle!"], ['Groloup', "J'ai crevé un pneu. Touche pas à ma chemise, c'est tout ce qui me reste de propre."]],
+    [['Groloup', "Mon pneu a lâché en chemin."], ['Didi', "Pauvre toi! T'as marché?"], ['Groloup', "Non, non! J'ai pompé. Soixante coups. Je les ai comptés deux fois."]],
+    [['Didi', "T'es ben essoufflé!"], ['Groloup', "J'ai regonflé un pneu au complet."], ['Didi', "Avec ta pompe?"], ['Groloup', "...Elle aussi, elle est à bout de souffle."]],
+  ],
   // bobos: selon ce qui l'a fait tomber le plus souvent
   bobos: {
+    arbre: [
+      [['Groloup', "Un arbre m'est tombé dessus!"], ['Didi', "Un arbre au complet?"], ['Groloup', "...Une grosse branche. Avec des feuilles."]],
+      [['Didi', "T'as des feuilles dans le collet!"], ['Groloup', "Un arbre a voulu me serrer la main. Il a visé la tête."]],
+      [['Groloup', "Les arbres du rang 14 tiennent plus debout!"], ['Didi', "Pis toi?"], ['Groloup', "Moi non plus, à ce qu'il paraît."]],
+    ],
+    eclair: [
+      [['Didi', "T'as les cheveux droits sur la tête!"], ['Groloup', "Le tonnerre m'a tombé dessus."], ['Didi', "Pis?"], ['Groloup', "Pis rien. Il a eu plus peur que moi."]],
+      [['Groloup', "J'ai pogné un éclair dans la côte!"], ['Didi', "Mon doux! Ça fait-tu mal?"], ['Groloup', "Non, mais ma sonnette sonne toute seule depuis."]],
+      [['Didi', "Tu sens le brûlé!"], ['Groloup', "Un éclair. Juste un petit. Je suis encore tiède."]],
+    ],
     ours: [
       [['Groloup', "Flûte que les ours sont tannants {auj}!"], ['Didi', "Un ours?! T'es-tu correct?"], ['Groloup', "Oui, oui. Il voulait juste mes bleuets."]],
       [['Groloup', "J'ai vu un ours gros comme une grange!"], ['Didi', "Gros comme une grange?"], ['Groloup', "...Comme un poulailler, mettons."]],
@@ -307,12 +324,12 @@ const SKETCHS = [
 const EVENEMENTS = [
   { id: 'calme', nom: 'Belle journée tranquille', intro: 'Pas un nuage, pas un ours en vue... en principe.',
     poids: { ours: .6, oiseau: .6, chien: .6, mouffette: .6 } },
-  { id: 'vent', nom: 'Vent de face!', intro: 'Le vent souffle fort sur le rang 14. Ça va forcer!',
-    mods: { pedal: .88 }, ambient: 'vent', didi: "T'as les cheveux tout mêlés!", rep: "Le vent m'a coiffé à sa manière." },
+  { id: 'vent', nom: 'Vent de face!', intro: 'Le vent souffle fort sur le rang 14. Ça va forcer... pis les arbres branlent!',
+    mods: { pedal: .88 }, poids: { arbre: 1.8 }, ambient: 'vent', didi: "T'as les cheveux tout mêlés!", rep: "Le vent m'a coiffé à sa manière." },
   { id: 'chaleur', nom: 'Canicule!', intro: 'Il fait chaud! Le souffle part plus vite. Mange des pommes!',
     mods: { drain: 1.3 }, poids: { pommier: 1.8 }, didi: "T'es rouge comme une tomate! Veux-tu de la limonade?", rep: "Oui! Un gros verre, s'il te plaît!", saisons: ['printemps', 'ete'] },
-  { id: 'pluie', nom: 'Petite pluie', intro: 'Il pleut! Attention aux flaques de boue.',
-    poids: { boue: 2.5 }, ambient: 'pluie', didi: "T'es trempé! Je vais te chercher une serviette.", rep: "Merci! Mes bas font flouc flouc.", sujet: 'eau' },
+  { id: 'pluie', nom: 'Orage sur le rang 14', intro: 'Il pleut à boire debout! Attention à la boue... pis aux éclairs.',
+    poids: { boue: 2.5, arbre: 1.4 }, ambient: 'pluie', didi: "T'es trempé! Je vais te chercher une serviette.", rep: "Merci! Mes bas font flouc flouc.", sujet: 'eau' },
   { id: 'bleuets', nom: 'Les bleuets sont mûrs', intro: 'Plein de bleuets pour la jauge de vent... pis plein d\'ours!',
     poids: { ours: 2.5 }, bleuets: 2, didi: "Pas trop d'ours sur la route?", sujet: 'ours',
     rep: st => st.causes.ours ? "Un ou deux... ils voulaient mes bleuets!" : "Pas un! Ils étaient trop occupés à manger.", saisons: ['ete', 'automne'] },
@@ -704,6 +721,11 @@ const Sound = {
       case 'blip': this.osc('pulse25', 1400, t, .025, .025); break;
       case 'arrivee': [523, 659, 784, 1047, 1319].forEach((f, k) => this.osc('pulse25', f, t + k * .07, .16, .1)); break;
       case 'oui': [784, 988, 1175, 1568, 1976, 2349].forEach((f, k) => this.osc('pulse25', f, t + k * .06, .2, .09)); break;
+      case 'crac': this.noise(t, .09, .3, 2200, 'highpass'); this.noise(t + .1, .07, .22, 1600, 'highpass'); this.osc('sawtooth', 180, t, .2, .1, null, 70); break;
+      case 'boum': this.osc('sine', 95, t, .35, .5, null, 38); this.noise(t, .3, .28, 320, 'lowpass'); break;
+      case 'gronde': this.noise(t, .9, .12, 160, 'lowpass'); this.osc('sine', 55, t, .8, .14, null, 40); break;
+      case 'tonnerre': this.noise(t, .1, .4, 3000, 'highpass'); this.noise(t + .04, 1.3, .38, 260, 'lowpass'); this.osc('sine', 70, t, 1.1, .35, null, 32); break;
+      case 'pompe': this.noise(t, .07, .13, 1700, 'bandpass'); this.osc('pulse25', 300, t, .07, .05, null, 520); break;
       case 'feu': this.noise(t, .6, .18, 500, 'lowpass'); this.osc('sine', 300, t, .5, .05, null, 80); break;
       case 'menu': this.osc('pulse25', 880, t, .05, .08); break;
       case 'dring': for (let k = 0; k < 6; k++) { this.osc('triangle', k % 2 ? 2350 : 2650, t + k * .045, .06, .16); }
@@ -1286,7 +1308,7 @@ function buildUp(n, seed, ev) {
   // obstacles et ennemis aléatoires
   // variété: jamais deux fois de suite la même embûche, et un maximum par sorte
   const caps = { vache: 2, tracteur: 1, ours: 2 + Math.round(d * 3), chien: 2 + Math.round(d * 2), mouffette: 1 + Math.round(d * 2),
-    billot: 3, foin: 4, boue: 4, nid: 5, roche: 5, oiseau: 4 + Math.round(d * 3), pommier: 4, fleurs: 6 };
+    billot: 3, arbre: 3, boue: 4, nid: 5, roche: 5, oiseau: 4 + Math.round(d * 3), pommier: 4, fleurs: 6 };
   const nb = {};
   // sac mélangé: toutes les sortes passent avant qu'une revienne, jamais 2 fois dans les 3 derniers tirages
   const sortes = Object.keys(p.poids).filter(k => p.poids[k] > 0);
@@ -1316,11 +1338,13 @@ function buildUp(n, seed, ev) {
     switch (k) {
       case 'roche': lev.solids.push({ x0: ex - 6, x1: ex + 6, top: y - 7, spr: 'roche' }); break;
       case 'billot': lev.solids.push({ x0: ex - 9, x1: ex + 9, top: y - 5, spr: 'billot' }); break;
-      case 'foin': {
-        const two = rng() < .5;
-        lev.solids.push({ x0: ex - 8, x1: ex + 8, top: y - 10, spr: 'foin' });
-        if (two) { lev.solids.push({ x0: ex + 8, x1: ex + 24, top: G(ex + 16) - 10, spr: 'foin' }); lev.solids.push({ x0: ex + 8, x1: ex + 24, top: G(ex + 16) - 21, spr: 'foin' }); }
-        for (let i = 0; i < 3; i++) lev.items.push({ k: 'fleur', x: ex - 4 + i * 6 + (two ? 12 : 0), y: (two ? G(ex + 16) - 21 : y - 10) - 9, v: i % 3 });
+      case 'arbre': {
+        // un gros arbre au bord du chemin: il craque pis tombe en travers quand Groloup approche (voir updateEnemies)
+        const sol = { x0: -9999, x1: -9999, top: 0, spr: null, mobile: true };
+        lev.solids.push(sol);
+        lev.enemies.push({ k: 'arbre', x: ex, y: y, state: 'debout', t: 0, sol, w: 26, h: 7 });
+        for (let i = 0; i < 3; i++) lev.items.push({ k: 'fleur', x: ex - 23 + i * 6, y: G(ex - 17) - 17, v: i % 3 });
+        busy.push([ex - 50, ex + 14]);
         break;
       }
       case 'nid': lev.zones.push({ k: 'nid', x0: ex - 5, x1: ex + 5 }); break;
@@ -1818,6 +1842,28 @@ function updateEnemies(dt) {
         }
         continue;
       }
+      case 'arbre': {
+        const s = e.sol;
+        e.y = gyAt(lev, e.x);
+        if (e.state === 'debout') {
+          if (P.x > e.x - 155 && P.x < e.x) { e.state = 'craque'; e.t = 0; Sound.fx('crac'); pop('CRAC!', e.x, e.y - 52, '#ffe060', 7); }
+        } else if (e.state === 'craque') {
+          e.t += dt; if (e.t > .4) { e.state = 'tombe'; e.t = 0; }
+        } else if (e.state === 'tombe') {
+          e.t += dt;
+          if (e.t >= ARBRE_CHUTE) {
+            e.state = 'sol'; G.shake = .3; Sound.fx('boum'); vibrer(60);
+            s.x0 = e.x - 30; s.x1 = e.x - 4; s.top = gyAt(lev, e.x - 17) - 7;
+            burst(e.x - 34, s.top - 2, 12, G.pal.leaf, 70); burst(e.x - 17, s.top + 6, 6, G.pal.roadL, 50);
+            // Groloup était juste en dessous
+            if (P.x + HW > s.x0 - 8 && P.x - HW < s.x1 && P.y > s.top - 3) {
+              P.x = s.x0 - 8 - HW; P.y = Math.min(P.y, gyAt(lev, P.x));
+              if (P.inv <= 0) { hurt(e); pop('PAF!', e.x - 17, s.top - 22, '#ffb060', 6); }
+            }
+          }
+        }
+        continue;
+      }
       case 'mouffette': {
         e.dir = e.dir || -1;
         e.x += e.dir * 8 * dt; e.anim += dt * 3;
@@ -1852,6 +1898,71 @@ function updateEnemies(dt) {
       hurt(e);
     }
   }
+}
+
+const ARBRE_CHUTE = .65;
+
+// ---------------- ÉCLAIRS (quand il pleut) ----------------
+// Un nuage noir gronde au-dessus du chemin en avant de Groloup, une cible clignote, pis l'éclair tombe: on freine ou on fonce.
+const FOUDRE = { avis: 1.15, rayon: 11 };
+function updateFoudre(dt) {
+  const lev = G.lev;
+  const F = G.foudre = G.foudre || { cd: 4 + Math.random() * 3, cible: null, flash: 0 };
+  F.flash = Math.max(0, F.flash - dt);
+  if (F.cible != null) {
+    F.t += dt;
+    if (!F.frappe && F.t >= FOUDRE.avis) {
+      F.frappe = true; F.flash = .3; Sound.fx('tonnerre'); G.shake = .35; vibrer([40, 30, 80]);
+      const gy = gyAt(lev, F.cible);
+      burst(F.cible, gy - 2, 12, '#ffe060', 90); burst(F.cible, gy - 2, 6, '#ffffff', 60);
+      if (Math.abs(P.x - F.cible) < FOUDRE.rayon && P.y > gy - 45 && P.inv <= 0) { hurt({ k: 'eclair' }); pop('BZZZT!', P.x, P.y - 46, '#ffe060', 8); }
+    }
+    if (F.t > FOUDRE.avis + .5) { F.cible = null; F.cd = 5 + Math.random() * 6; }
+    return;
+  }
+  F.cd -= dt;
+  if (F.cd > 0) return;
+  const x = P.x + 55 + Math.random() * 50;
+  const ok = x > 330 && x < lev.didiX - 230 && hasGround(lev, x) && !lev.creeks.some(c => x > c.x0 - 25 && x < c.x1 + 25);
+  if (!ok) { F.cd = 1.2; return; }
+  F.cible = x; F.t = 0; F.frappe = false; Sound.fx('gronde');
+}
+
+// ---------------- CREVAISON (mini-jeu, au plus une fois par partie) ----------------
+function tirerCrevaison(depuis) { return Math.random() < .75 ? depuis + ((Math.random() * 4) | 0) : 0; }
+function planifierCrevaison() {
+  G.crev = null; G.crevX = 0;
+  const p = G.partie, lev = G.lev;
+  if (!p || p.crevFaite || p.crevVisite !== G.visite) return;
+  const libre = x => hasGround(lev, x) && x > 420 && x < lev.didiX - 420
+    && !lev.creeks.some(c => x > c.x0 - 70 && x < c.x1 + 50)
+    && !lev.solids.some(s => x > s.x0 - 40 && x < s.x1 + 40)
+    && !lev.zones.some(z => x > z.x0 - 25 && x < z.x1 + 25)
+    && !lev.cps.some(c => Math.abs(c.x - x) < 40)
+    && !lev.enemies.some(e => e.x != null && Math.abs(e.x - x) < 90);
+  for (let k = 0; k < 80; k++) { const x = lev.L * (.3 + Math.random() * .4); if (libre(x)) { G.crevX = x; return; } }
+  p.crevVisite = G.visite + 1;   // pas de place cette fois-ci: ce sera pour la prochaine visite
+}
+function startCrevaison() {
+  G.crev = { phase: 'psst', t: 0, air: 0, coups: 0, duree: 0, coupT: 0 };
+  G.crevX = 0; G.partie.crevFaite = true;
+  P.vx = 0; P.vy = 0; P.walking = false; P.boostT = 0; P.pose = 'debout'; P.inv = 0;
+  if (G.foudre) { G.foudre.cible = null; G.foudre.cd = 6; }
+  Sound.fx('pschit'); G.shake = .2; vibrer(120);
+}
+function updateCrevaison(dt) {
+  const c = G.crev; c.t += dt; c.coupT = Math.max(0, c.coupT - dt);
+  if (c.phase === 'psst') {
+    if (Math.random() < .6) part('px', P.x + 9, P.y - 3, 25 + Math.random() * 40, -10 - Math.random() * 30, .4, '#ffffff');
+    if (c.t > 1.1) { c.phase = 'pompe'; c.t = 0; }
+  } else if (c.phase === 'pompe') {
+    c.duree += dt; c.air = Math.max(0, c.air - .09 * dt);
+    if (inp.jumpP || inp.okP) { c.air += .07; c.coups++; c.coupT = .12; Sound.fx('pompe'); vibrer(15); }
+    if (c.air >= 1) {
+      c.air = 1; c.phase = 'fini'; c.t = 0; G.stats.crevaison = c.duree; Sound.fx('repos');
+      if (c.duree < 3.5) { c.bonus = true; addAmour(1); }
+    }
+  } else if (c.t > 1.2) { G.crev = null; P.pose = null; P.inv = 1; pop('Repartons!', P.x, P.y - 36); }
 }
 
 function updateItems(dt) {
@@ -2231,8 +2342,76 @@ function drawEntities(cx, cy) {
     else if (e.k === 'chien') spr(SPR.chien[e.state === 'court' || e.state === 'retour' || e.state === 'fuit' ? f : 0], X - 7, Y - 8, e.state === 'retour' || e.state === 'fuit' || e.state === 'fini');
     else if (e.k === 'mouffette') spr(SPR.mouffette[f], X - 7, Y - 8, e.dir > 0);
     else if (e.k === 'vache') spr(SPR.vache[f], X - 10, Y - 11, e.dir > 0);
+    else if (e.k === 'arbre') drawArbre(e, Math.round(X), Math.round(Y), cy);
     else if (e.k === 'tracteur') { if (e.fade) g.globalAlpha = Math.max(0, 1 - e.fade); spr(SPR.tracteur[f], X - 15, Y - 23); g.globalAlpha = 1; }
   }
+}
+
+// Arbre au bord du chemin: debout, qui craque, qui tombe (il pivote sur sa base), pis couché en travers
+function drawArbre(e, X, Y, cy) {
+  const pal = G.pal, tr = '#6a4426', trD = '#4e3018';
+  if (e.state === 'sol') {
+    // couché: dessiné bien droit, comme les autres obstacles (pixels nets)
+    // le tronc suit la pente du chemin, colonne par colonne
+    const sy = dx => Math.round(gyAt(G.lev, e.x + dx) - cy) - 7;
+    DISC(g, X - 37, sy(-37) + 1, 9, 7, pal.leafD); DISC(g, X - 39, sy(-39) - 1, 7, 5, pal.leaf);
+    for (let dx = -30; dx < -4; dx++) {
+      const y = sy(dx);
+      rect(X + dx, y, 1, 7, tr); rect(X + dx, y + 5, 1, 2, trD); rect(X + dx, y, 1, 1, '#8a5c38');
+      if ((dx + 30) % 6 === 3) rect(X + dx, y + 2 + ((dx + 30) % 12 === 3 ? 1 : 0), 2, 1, trD);
+    }
+    const yr = sy(-4);
+    rect(X - 5, yr + 1, 2, 5, '#c8945a');
+    rect(X - 3, yr + 2, 3, 1, trD); rect(X - 3, yr + 5, 4, 1, trD); rect(X - 2, yr + 3, 1, 2, trD);   // racines
+    return;
+  }
+  let a = 0, lift = 0;
+  if (e.state === 'craque') a = Math.sin(e.t * 45) * .05;
+  else if (e.state === 'tombe') { const k = Math.min(1, e.t / ARBRE_CHUTE); a = -Math.PI / 2 * k * k; lift = 3.5 * k * k; }
+  g.save(); g.translate(X, Y - lift); g.rotate(a);
+  g.fillStyle = tr; g.fillRect(-3, -30, 6, 30); g.fillStyle = trD; g.fillRect(1, -30, 2, 30);
+  g.fillStyle = '#8a5c38'; g.fillRect(-3, -30, 1, 30);
+  DISC(g, 0, -37, 9, 9, pal.leafD); DISC(g, -2, -39, 7, 6, pal.leaf);
+  g.restore();
+}
+// Éclair: le nuage pis la cible qui avertissent, pis l'éclair lui-même
+function drawFoudre(cx, cy) {
+  const F = G.foudre; if (!F || F.cible == null) return;
+  const X = Math.round(F.cible - cx), Y = Math.round(gyAt(G.lev, F.cible) - cy), ny = Math.max(46, Y - 92);
+  if (F.t < FOUDRE.avis + .2) {
+    DISC(g, X, ny, 17, 5, '#32364a'); DISC(g, X - 8, ny - 3, 9, 5, '#44485e'); DISC(g, X + 6, ny - 4, 11, 6, '#44485e');
+  }
+  if (!F.frappe) {
+    if (((G.t * 10) | 0) % 2) { rect(X - FOUDRE.rayon, Y - 1, FOUDRE.rayon * 2 + 1, 2, '#ffe060'); txt('!', X, Y - 15, 8, '#ffe060', 'center'); }
+  } else if (F.t < FOUDRE.avis + .2) {
+    let x = X, y = ny + 4; const n = 7, pas = (Y - y) / n;
+    for (let k = 0; k < n; k++) {
+      const nx = k === n - 1 ? X : X + (hsh(k * 31 + (F.cible | 0)) % 11) - 5;
+      LN(g, x, y, nx, y + pas, '#ffffff'); LN(g, x + 1, y, nx + 1, y + pas, '#ffe060');
+      x = nx; y += pas;
+    }
+  }
+}
+// Crevaison: la pompe à côté de la roue d'en avant, pis le panneau du mini-jeu
+function drawPompe(cx, cy) {
+  const c = G.crev; if (!c) return;
+  const X = Math.round(P.x - cx) + 17, Y = Math.round(P.y - cy);
+  const bas = c.coupT > 0 ? 3 : 0;   // la poignée descend à chaque coup
+  if (c.air < 1) rect(X - 13, Y - 1, 9, 1, '#1a1a1a');   // pneu à plat
+  rect(X, Y - 9, 3, 9, '#8a929c'); rect(X, Y - 9, 1, 9, '#c8d0d8'); rect(X - 1, Y - 1, 5, 1, '#3a3a44');
+  rect(X + 1, Y - 14 + bas, 1, 5 - bas, '#c8d0d8'); rect(X - 1, Y - 15 + bas, 5, 1, '#d8342a');
+  LN(g, X, Y - 2, X - 5, Y - 3, '#1a1a1a');
+}
+function drawCrevaison() {
+  const c = G.crev;
+  panel(70, 40, 180, 48);
+  txt('CREVAISON!', 160, 45, 8, '#ffe060', 'center');
+  if (c.phase === 'psst') { txt('Pssshhh...', 160, 64, 6, '#ffffff', 'center'); return; }
+  rect(90, 59, 140, 9, '#ffffff'); rect(91, 60, 138, 7, '#1e1a3a');
+  rect(91, 60, Math.round(138 * c.air), 7, c.air > .7 ? '#7ae07a' : '#5ac8ff');
+  for (let k = 1; k < 4; k++) rect(91 + Math.round(138 * k / 4), 60, 1, 7, 'rgba(0,0,0,.35)');
+  if (c.phase === 'pompe') { if (((G.t * 4) | 0) % 2 || c.coups > 0) txt(touchMode ? 'Tape SAUTE pour pomper!' : 'Tape ESPACE pour pomper!', 160, 74, 5, '#ffffff', 'center'); }
+  else txt('Regonflé en ' + c.duree.toFixed(1).replace('.', ',') + ' s!' + (c.bonus ? ' +1 amour' : ''), 160, 74, 5, '#b4ff9a', 'center');
 }
 
 // Didi montre son humeur: bras croisés (indifférente), debout ou envoie la main, saute de joie (amoureuse)
@@ -2339,11 +2518,13 @@ function drawWorld() {
   drawGround(cx, cy);
   drawEntities(cx, cy);
   drawPlayer(cx, cy);
+  if (G.state === 'monte') { drawPompe(cx, cy); drawFoudre(cx, cy); }
   if (G.state === 'arrivee' && G.arr && G.arr.bouquet > 0 && P.pose === 'debout') drawBouquetArrivee(cx, cy);
   drawParticles(cx, cy);
   TXT_ZOOM = null;
   if (G.pal.night) { g.fillStyle = 'rgba(10,14,50,.18)'; g.fillRect(0, 0, W, H); }
   if (G.event && G.event.ambient === 'pluie' && G.state !== 'titre') { g.fillStyle = 'rgba(50,60,80,.16)'; g.fillRect(0, 0, W, H); }
+  if (G.foudre && G.foudre.flash > 0 && G.state === 'monte') { g.fillStyle = 'rgba(255,255,240,' + (G.foudre.flash / .3 * .7).toFixed(2) + ')'; g.fillRect(0, 0, W, H); }
   // tout ce qui se dessine après le monde (jauges, répliques, cartes) va dans le calque d'interface, jamais zoomé
   g = gUI; g.imageSmoothingEnabled = false; UI_UTILISE = true;
 }
@@ -2473,7 +2654,8 @@ function startVisit() {
   G.event = G.visite === 1 ? piocher('evenements', EVENEMENTS, e => e.id === 'calme') : piocher('evenements', EVENEMENTS, e => !e.saisons || e.saisons.includes(G.saison));
   G.up = buildUp(G.visite, G.seed, G.event);
   setLevel(G.up);
-  G.fauxDepart = false; G.banniere = null;
+  G.fauxDepart = false; G.banniere = null; G.foudre = null;
+  planifierCrevaison();
   G.stats = { fleurs: 0, plantes: 0, nids: 0, coeurs: 0, t: 0, mouffette: false, delta: 0, amourDebut: G.amour, pets: 0, causes: {} };
   G.parts = []; G.pops = []; G.arr = null;
   resetPlayer(G.lev.homeX + 40); P.pose = null; P.hidden = false;
@@ -2517,6 +2699,7 @@ function startArrival() {
   const causes = st.causes || {}, evt = G.event;
   let ex = null;
   if (st.mouffette) { ex = tirer('mouffette', DIALOGUES.mouffette); A.bonus = (A.bonus || 0) - 1; }
+  else if (st.crevaison != null) ex = tirer('crevaison', DIALOGUES.crevaison);
   else if (st.plantes >= 3) {
     // ce qui l'a fait tomber le plus souvent
     const top = Object.keys(causes).filter(k => DIALOGUES.bobos[k]).sort((x, y) => causes[y] - causes[x])[0];
@@ -2705,9 +2888,10 @@ function updateTitle(dt) {
     if (choix === 'continuer') {
       G.visite = G.save.visite; G.amour = G.save.amour; G.totalFleurs = G.save.fleurs || 0;
       chargerPaquets(); G.pet = G.save.pet || 0; G.vus = G.save.vus || { chanson: !!G.save.chanson }; G.partie = Object.assign({ plantes: 0, temps: 0, par: 0, coeurs: 0, ours: 0, sansFaute: 0, wheelie: 0 }, G.save.partie || {});
+      if (G.partie.crevVisite == null) G.partie.crevVisite = tirerCrevaison(G.visite);
       G.oui = false; suivi('reprise', G.visite, { amour: Math.floor(G.amour) }); startVisit();
     } else {
-      G.visite = 1; G.amour = 0; G.totalFleurs = 0; chargerPaquets(); G.pet = 0; G.oui = false; G.vus = {}; G.partie = { plantes: 0, temps: 0, par: 0, coeurs: 0, ours: 0, sansFaute: 0, wheelie: 0 };
+      G.visite = 1; G.amour = 0; G.totalFleurs = 0; chargerPaquets(); G.pet = 0; G.oui = false; G.vus = {}; G.partie = { plantes: 0, temps: 0, par: 0, coeurs: 0, ours: 0, sansFaute: 0, wheelie: 0, crevVisite: tirerCrevaison(2), crevFaite: false };
       suivi('nouvelle', 1);
       startVisit();   // les instructions restent dans « Comment jouer » au menu
     }
@@ -3002,7 +3186,7 @@ function pagesAide() {
     { titre: 'Le but du jeu', lignes: [
       ['heartBig', "Gagne le coeur de Didi! Quand la jauge d'amour atteint 95 %, Groloup fait la grande demande."],
       ['fleurs', "L'amour monte en avançant dans la côte pis en cueillant des fleurs."],
-      ['oiseau', "Il baisse quand tu te plantes (ours, oiseaux, chiens, mouffettes, nids-de-poule, ruisseau) ou si tu traînes trop."],
+      ['oiseau', "Il baisse quand tu te plantes (ours, oiseaux, chiens, mouffettes, arbres qui tombent, éclairs, nids-de-poule, ruisseau) ou si tu traînes trop."],
       ['heart', "Au retour, c'est la descente sans danger: attrape les coeurs pour un petit bonus."],
     ] },
     { titre: 'Souffle, pommes et boost', lignes: [
@@ -3474,9 +3658,13 @@ function update(dt) {
       if ((inp.okP || inp.jumpP) && G.stateT > .4) { setState('monte'); Sound.play('montee' + musicNo()); inp.jumpP = false; }
       break;
     case 'monte': case 'descend': {
+      // crevaison: tout s'arrête le temps de pomper (le chrono aussi)
+      if (G.crev) { updateCrevaison(dt); updateParticles(dt); ambient(dt); updateCamera(dt, 105); break; }
       const n = Math.max(1, Math.ceil(dt / (1 / 100)));
       for (let k = 0; k < n; k++) { updatePlayer(dt / n); if (k === 0) { inp.jumpP = false; inp.toolP = false; inp.boostP = false; } }
       if (G.state === 'monte') { updateEnemies(dt); G.stats.t += dt;
+        if (G.event && G.event.ambient === 'pluie') updateFoudre(dt);
+        if (G.crevX && P.x >= G.crevX && P.onGround && P.x < G.crevX + 60) startCrevaison();
         if (G.stats.t > G.lev.parTime) { addAmour(-AMOUR.retardParSec * dt); if (!P.impatient) { P.impatient = true; pop("Didi s'impatiente...", P.x, P.y - 44, '#ff9ab0'); } } }
       updateItems(dt); updateParticles(dt); ambient(dt); updateCamera(dt, G.state === 'descend' ? W - 105 : 105);
       if (G.state === 'monte' && !G.fauxDepart && G.stats.t > .6 && (P.x < G.lev.homeX + 28 || (G.stats.t > 5 && P.x < G.lev.homeX + 70))) {
@@ -3521,7 +3709,7 @@ function render() {
     case 'badges': drawBadges(); break;
     case 'honneur': drawHonneur(); break;
     case 'intro': drawIntro(); break;
-    case 'monte': case 'descend': drawWorld(); drawHUD(); if (G.banniere) drawBanniere(); break;
+    case 'monte': case 'descend': drawWorld(); drawHUD(); if (G.crev) drawCrevaison(); else if (G.banniere) drawBanniere(); break;
     case 'arrivee': {
       // un badge s'affiche en haut pendant les répliques: la jauge se tasse le temps qu'il passe
       drawWorld(); if (!(G.toasts && G.toasts.length)) drawHUD();
