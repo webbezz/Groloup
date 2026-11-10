@@ -73,9 +73,11 @@ const CONFIG = {
 const AMOUR = {
   trajet: 8,        // gagné progressivement en montant la côte
   fleurs: 4,        // pour TOUTES les fleurs du trajet (chaque fleur vaut sa part: un trajet plus long ne donne pas plus d'amour)
-  plante: -2,       // chaque fois qu'il se plante
-  plouf: -3,        // tombé dans le ruisseau
-  retardParSec: .3, // Didi s'impatiente après le temps normal
+  plante: -1,       // chaque fois qu'il se plante
+  plouf: -1.5,      // tombé dans le ruisseau
+  retardParSec: .12,// Didi s'impatiente après le temps normal
+  retardMax: 3,     // ...mais elle finit par arrêter de compter
+  nid: -.5,         // nid-de-poule
   coeurs: 3,        // pour TOUS les coeurs de la descente (chaque coeur vaut sa part)
   demande: 95,      // seuil pour la grande demande
 };
@@ -1599,7 +1601,7 @@ function addAmour(d, x, y, label) {
   G.amour = clamp(G.amour + d, 0, 100);
   if (G.stats) G.stats.delta += G.amour - before;
   if (label) pop(label, x, y, d < 0 ? '#ff6a7a' : '#ffb0c8');
-  if (d <= -1) Sound.fx('baisse');
+  if (d <= -.5) Sound.fx('baisse');
 }
 function pop(txt, x, y, col, size, dur) {
   G.pops.push({ txt, x: x == null ? P.x : x, y: y == null ? P.y - 34 : y, t: 0, col: col || '#ffffff', size: size || 6, dur: dur || 1.4 });
@@ -1618,7 +1620,7 @@ function hurt(e) {
   P.inv = 1.6; P.vx = -95; P.vy = -170; P.onGround = false;
   G.stats.plantes++;
   const cause = e && e.k ? e.k : 'autre'; G.stats.causes[cause] = (G.stats.causes[cause] || 0) + 1;
-  addAmour(AMOUR.plante, P.x, P.y - 40, '-' + Math.abs(AMOUR.plante) + ' amour');
+  addAmour(AMOUR.plante, P.x, P.y - 40, '-' + String(Math.abs(AMOUR.plante)).replace('.', ',') + ' amour');
   pop(OUILLE[(Math.random() * OUILLE.length) | 0], P.x, P.y - 30, '#ffe060', 7);
   Sound.fx('aie'); G.shake = .3; vibrer(90);
   burst(P.x, P.y - 12, 10, '#ffffff', 80);
@@ -1691,7 +1693,7 @@ function updatePlayer(dt) {
       if (z.k === 'boue') { P.mud = true; if (Math.random() < .3) part('px', P.x - 6, P.y - 1, -20 - Math.random() * 30, -40 - Math.random() * 40, .5, '#5a3a1e'); }
       else if (z.k === 'nid' && P.nidCd <= 0 && Math.abs(P.vx) > 15) {
         P.nidCd = .8; P.vx *= .3; P.vy = -110; P.onGround = false; G.shake = .25; Sound.fx('nid');
-        G.stats.nids++; addAmour(-1, P.x, P.y - 40, '-1 amour');
+        G.stats.nids++; addAmour(AMOUR.nid, P.x, P.y - 40, '-0,5 amour');
         pop('Nid-de-poule!', P.x, P.y - 30, '#ffe060');
       }
     }
@@ -1838,7 +1840,7 @@ function plouf(c) {
   Sound.fx('plouf'); burst(P.x, P.y, 16, G.pal.waterL, 90);
   G.stats.plantes++;
   G.stats.causes.eau = (G.stats.causes.eau || 0) + 1;
-  addAmour(AMOUR.plouf, P.x, P.y - 40, '-' + Math.abs(AMOUR.plouf) + ' amour');
+  addAmour(AMOUR.plouf, P.x, P.y - 40, '-' + String(Math.abs(AMOUR.plouf)).replace('.', ',') + ' amour');
   pop('Plouf!', P.x, P.y - 30, '#9ad0f4', 8);
   resetPlayerAt(c.g0 - 60);
   P.inv = 1.2;
@@ -4045,7 +4047,7 @@ function update(dt) {
       if (G.state === 'monte') { updateEnemies(dt); G.stats.t += dt;
         if (G.event && G.event.ambient === 'pluie') updateFoudre(dt);
         verifierDefi();
-        if (G.stats.t > G.lev.parTime) { addAmour(-AMOUR.retardParSec * dt); if (!P.impatient) { P.impatient = true; pop("Didi s'impatiente...", P.x, P.y - 44, '#ff9ab0'); } } }
+        if (G.stats.t > G.lev.parTime) { if ((G.stats.t - G.lev.parTime) * AMOUR.retardParSec < AMOUR.retardMax) addAmour(-AMOUR.retardParSec * dt); if (!P.impatient) { P.impatient = true; pop("Didi s'impatiente...", P.x, P.y - 44, '#ff9ab0'); } } }
       if (G.state === 'descend') updatePolice(dt);
       updateItems(dt); updateParticles(dt); ambient(dt); updateCamera(dt, G.state === 'descend' ? W - 105 : 105);
       if (G.state === 'monte' && !G.fauxDepart && G.stats.t > .6 && (P.x < G.lev.homeX + 28 || (G.stats.t > 5 && P.x < G.lev.homeX + 70))) {
