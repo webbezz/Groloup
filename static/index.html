@@ -3750,7 +3750,7 @@ function render() {
   flushText();
 }
 
-let last = performance.now(), lastReady = null;
+let last = performance.now(), lastReady = null, lastVis = null;
 function loop(now) {
   const dt = Math.min(.05, (now - last) / 1000); last = now; G.dtFrame = dt;
   try {
@@ -3759,6 +3759,9 @@ function loop(now) {
     render();
   } catch (err) { console.error(err); }
   inp.jumpP = inp.toolP = inp.boostP = inp.okP = inp.upP = inp.downP = false; inp.tap = null;
+  // boutons tactiles: seulement quand ils servent (pendant les répliques pis les cartes, on touche l'écran pour continuer)
+  const vis = playing() ? (G.crev ? 'J' : 'LRJTB') : G.state === 'finale' ? 'TB' : '';
+  if (vis !== lastVis) { lastVis = vis; for (const id of ['L', 'R', 'J', 'T', 'B']) $('b' + id).style.display = vis.includes(id) ? '' : 'none'; }
   const rdy = G.pet >= PET.cout; if (rdy !== lastReady) { lastReady = rdy; $('bB').classList.toggle('ready', rdy); }
   requestAnimationFrame(loop);
 }
