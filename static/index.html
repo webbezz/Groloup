@@ -3754,16 +3754,23 @@ function fsRefus() {
   G.toast = { t: 0, txt: ios ? "L'iPhone ne permet pas le plein écran pour les pages web. Tourne ton téléphone à l'horizontale!"
     : "Plein écran bloqué ici. Ouvre le lien dans Chrome (pas dans l'app) pis réessaie." };
 }
-function toggleFull() {
-  const d = document, el = d.documentElement;
+// Sur mobile, le plein écran s'active tout seul au premier toucher (un navigateur refuse de le faire sans un geste du joueur).
+// Si le joueur en sort avec le bouton, on ne le force plus.
+let autoFull = true;
+function entrerFull(discret) {
+  const el = document.documentElement, refus = discret ? () => { } : fsRefus;
   try {
-    if (isFull()) { (d.exitFullscreen || d.webkitExitFullscreen).call(d); return; }
     const req = el.requestFullscreen || el.webkitRequestFullscreen;
-    if (!req) { fsRefus(); return; }
+    if (!req) { refus(); return; }
     const p = req.call(el, { navigationUI: 'hide' });
     const lock = () => { try { const o = screen.orientation; if (o && o.lock) o.lock('landscape').catch(() => { }); } catch (e) { } };
-    if (p && p.then) p.then(lock).catch(fsRefus); else lock();
-  } catch (e) { fsRefus(); }
+    if (p && p.then) p.then(lock).catch(refus); else lock();
+  } catch (e) { refus(); }
+}
+function toggleFull() {
+  const d = document;
+  if (isFull()) { autoFull = false; try { (d.exitFullscreen || d.webkitExitFullscreen).call(d); } catch (e) { } return; }
+  autoFull = true; entrerFull(false);
 }
 document.addEventListener('fullscreenchange', () => setTimeout(resize, 100));
 document.addEventListener('webkitfullscreenchange', () => setTimeout(resize, 100));
@@ -3823,7 +3830,11 @@ function onTouch(e) {
       if (!onBtn) { if (G.paused) G.paused = false; else { inp.okP = true; inp.tap = toGame(t.clientX, t.clientY); } }
     }
   }
-  if (e.type === 'touchend') for (const t of e.changedTouches) if (inRect(t, $('bFull'), 4)) toggleFull();
+  if (e.type === 'touchend') {
+    let bouton = false;
+    for (const t of e.changedTouches) if (inRect(t, $('bFull'), 4)) { bouton = true; toggleFull(); }
+    if (!bouton && autoFull && !isFull()) entrerFull(true);
+  }
   const a = { L: false, R: false, J: false, T: false, B: false };
   for (const t of e.touches) {
     if (inRect(t, $('bB'), 8)) a.B = true;
