@@ -88,7 +88,7 @@ const SAISON_NOM = { printemps: 'Printemps', ete: 'Été', automne: 'Automne', n
 function paramsVisite(n) {
   const d = Math.min(1, (n - 1) / 6);
   return {
-    L: Math.round((2300 + d * 1500) * 1.1 * 1.15), minS: .05 + d * .06, maxS: .15 + d * .13,
+    L: Math.round((2300 + d * 1500) * 1.1 * 1.15 * 1.25), minS: .05 + d * .06, maxS: .15 + d * .13,
     ruisseaux: n < 2 ? 0 : n < 5 ? 1 : 2,
     poids: {
       roche: 3, nid: 3, boue: 2, ours: 1 + d * 3, oiseau: 3 + d * 1.5, chien: 1 + d * 1.5, vache: .6 + d * .4, tracteur: n < 2 ? 0 : .8,
@@ -765,6 +765,7 @@ const Sound = {
       case 'cliquetis': this.osc('pulse12', 2300 + Math.random() * 400, t, .03, .05); this.noise(t, .025, .08, 5000, 'highpass'); break;
       case 'tchak': this.noise(t, .12, .35, 1300, 'bandpass'); this.osc('sine', 190, t, .12, .32, null, 60); break;
       case 'manque': this.osc('sawtooth', 150, t, .18, .1, null, 85); this.noise(t, .15, .16, 400, 'lowpass'); break;
+      case 'sirene': this.osc('pulse25', 620, t, .2, .045, null, 900); this.osc('pulse25', 900, t + .2, .2, .045, null, 620); break;
       case 'pompe': this.noise(t, .07, .13, 1700, 'bandpass'); this.osc('pulse25', 300, t, .07, .05, null, 520); break;
       case 'feu': this.noise(t, .6, .18, 500, 'lowpass'); this.osc('sine', 300, t, .5, .05, null, 80); break;
       case 'menu': this.osc('pulse25', 880, t, .05, .08); break;
@@ -1035,6 +1036,22 @@ function buildSprites() {
   for (let f = 0; f < 6; f++) SPR.walk.push(makeWalker(f, LOOK.groloup));
   SPR.stand = makeWalker(0, LOOK.groloup, true);
   SPR.bucheron = [makeBucheron(true), makeBucheron(false)];
+  // auto de police des années 70 (roule vers la gauche), gyrophare allumé / éteint
+  SPR.police = [0, 1].map(f => {
+    const [c, x] = mkCanvas(42, 19);
+    const cr = '#ece6d2', crD = '#c8c0a8', bl = '#26427e', vi = '#9ad0f0';
+    rect2(x, 2, 9, 38, 6, cr); rect2(x, 2, 14, 38, 1, crD); rect2(x, 3, 8, 36, 1, cr);
+    rect2(x, 12, 4, 19, 5, cr); rect2(x, 13, 3, 17, 1, cr);
+    rect2(x, 13, 5, 7, 4, vi); rect2(x, 22, 5, 8, 4, vi); rect2(x, 13, 5, 7, 1, '#d8f0ff'); rect2(x, 22, 5, 8, 1, '#d8f0ff');
+    rect2(x, 15, 6, 3, 3, '#3a3a50'); rect2(x, 15, 5, 3, 1, '#26427e'); P1(x, 15, 7, '#e8b890');   // le policier pis sa casquette
+    rect2(x, 2, 11, 38, 2, bl);
+    rect2(x, 0, 12, 3, 2, '#9aa2ac'); rect2(x, 39, 12, 3, 2, '#9aa2ac');
+    rect2(x, 2, 10, 2, 1, '#ffe060'); rect2(x, 39, 10, 1, 1, '#c82020');
+    for (const wx of [10, 32]) { DISC(x, wx, 15, 3, 3, '#16161a'); rect2(x, wx - 1, 14, 2, 2, '#9aa2ac'); }
+    rect2(x, 20, 1, 3, 2, f ? '#ff3020' : '#8a1410'); rect2(x, 20, 3, 3, 1, '#3a3a40');
+    if (f) { P1(x, 19, 1, '#ff9080'); P1(x, 23, 1, '#ff9080'); P1(x, 21, 0, '#ff9080'); }
+    return c;
+  });
   SPR.velo = (() => { const [c, x] = mkCanvas(32, 36); drawBikeFrame(x, 0, 0, 0); return c; })();
   // le père de Didi: casquette, cheveux gris, chemise à carreaux, bras croisés (regarde vers la gauche) — aussi grand que Groloup
   const pere = ['...cccccc...', '..cccccccc..', '.VVccccccc..', '..sssshhh...', '..sessshh...', '..sssssh....', '..smsss.....', '...ssss.....',
@@ -1311,8 +1328,9 @@ function buildBackground(pal) {
 }
 
 // ---------------- GÉNÉRATION D'UNE VISITE ----------------
-function buildUp(n, seed, ev) {
+function buildUp(n, seed, ev, nuit) {
   const p = paramsVisite(n), rng = rngOf(seed), L = p.L, d = Math.min(1, (n - 1) / 6);
+  if (nuit) p.poids.oiseau = 0;   // la nuit, on voit mal les oiseaux: il n'y en a pas
   if (ev && ev.poids) for (const k in ev.poids) if (k in p.poids) p.poids[k] *= ev.poids[k];
   const slope = new Float32Array(L + 2);
   const segs = [];
@@ -1371,6 +1389,7 @@ function buildUp(n, seed, ev) {
   // variété: jamais deux fois de suite la même embûche, et un maximum par sorte
   const caps = { vache: 2, tracteur: 1, ours: 2 + Math.round(d * 3), chien: 2 + Math.round(d * 2), mouffette: 1 + Math.round(d * 2),
     billot: 3, arbre: 3, boue: 4, nid: 5, roche: 5, oiseau: 4 + Math.round(d * 3), pommier: 4, fleurs: 6 };
+  for (const k in caps) if (k !== 'tracteur') caps[k] = Math.ceil(caps[k] * 1.25);   // le trajet est plus long: un peu plus de chaque sorte
   const nb = {};
   // sac mélangé: toutes les sortes passent avant qu'une revienne, jamais 2 fois dans les 3 derniers tirages
   const sortes = Object.keys(p.poids).filter(k => p.poids[k] > 0);
@@ -1960,6 +1979,33 @@ function updateEnemies(dt) {
       hurt(e);
     }
   }
+}
+
+// ---------------- LA POLICE (au retour) ----------------
+// Un wheelie à toute vitesse dans la descente: une auto de police sort en arrière, gyrophare allumé, pis le suit quelques secondes.
+// Aucune conséquence: elle décroche dès qu'il ralentit ou qu'il remet sa roue à terre.
+const POLICE_MOTS = ['Wô, le jeune!', 'Moins vite!', 'Deux roues à terre!', 'Tasse-toi!', 'Pas si vite!'];
+function updatePolice(dt) {
+  const Po = G.police = G.police || { actif: false, charge: 0, lache: 0, t: 0, cd: 2, dx: 150, sir: 0, mot: 0 };
+  const vite = P.wheelie && Math.abs(P.vx) > 120 && P.x > G.lev.homeX + 320 && P.x < G.lev.didiX - 200;
+  Po.cd = Math.max(0, Po.cd - dt);
+  if (!Po.actif) {
+    Po.charge = vite ? Po.charge + dt : 0;
+    if (Po.charge > .9 && Po.cd <= 0) { Po.actif = true; Po.fuit = false; Po.t = 0; Po.lache = 0; Po.dx = 135; Po.sir = 0; Po.mot = .7; }
+    return;
+  }
+  Po.t += dt;
+  Po.lache = vite ? 0 : Po.lache + dt;
+  if (!Po.fuit && (Po.lache > .5 || Po.t > 7)) { Po.fuit = true; if (Po.t > 7) pop('Bon... on le pognera à la messe.', P.x - 20, P.y - 52, '#ffffff', 5, 1.8); }
+  if (Po.fuit) {
+    Po.dx += 150 * dt;
+    if (Po.dx > 160) { Po.actif = false; Po.charge = 0; Po.cd = 5; }
+    return;
+  }
+  Po.dx = approach(Po.dx, 62, 90 * dt);
+  Po.sir -= dt; if (Po.sir <= 0) { Po.sir = .42; Sound.fx('sirene'); }
+  Po.mot -= dt;
+  if (Po.mot <= 0) { Po.mot = 1.7; const px = P.x + Po.dx; pop(piocher('police', POLICE_MOTS), P.x + 34, gyAt(G.lev, px) - 32, '#ffffff', 5, 1.3); }
 }
 
 const ARBRE_CHUTE = .65;
@@ -2737,6 +2783,11 @@ function drawWorld() {
   drawDecor(cx, cy);
   drawGround(cx, cy);
   drawEntities(cx, cy);
+  if (G.state === 'descend' && G.police && G.police.actif) {
+    const px = P.x + G.police.dx, X = Math.round(px - cx), Y = Math.round(gyAt(G.lev, clamp(px, 0, G.lev.L)) - cy);
+    spr(SPR.police[((G.t * 7) | 0) % 2], X - 21, Y - 19 + (((G.t * 14) | 0) % 2 ? 0 : 1));
+    if (Math.random() < .5) part('px', px + 18, gyAt(G.lev, clamp(px, 0, G.lev.L)) - 2, 30 + Math.random() * 30, -8 - Math.random() * 10, .4, G.pal.roadL);
+  }
   if (G.state === 'monte' || G.state === 'arrivee') drawPere(cx, cy);
   drawPlayer(cx, cy);
   if (G.state === 'monte') { drawDefiAvant(cx, cy); drawFoudre(cx, cy); }
@@ -2873,7 +2924,7 @@ function startVisit() {
   G.pal = PAL[G.saison]; G.bg = buildBackground(G.pal);
   G.seed = (Math.random() * 1e9) | 0;
   G.event = G.visite === 1 ? piocher('evenements', EVENEMENTS, e => e.id === 'calme') : piocher('evenements', EVENEMENTS, e => !e.saisons || e.saisons.includes(G.saison));
-  G.up = buildUp(G.visite, G.seed, G.event);
+  G.up = buildUp(G.visite, G.seed, G.event, G.saison === 'nuit');
   setLevel(G.up);
   G.fauxDepart = false; G.banniere = null; G.foudre = null;
   planifierDefi();
@@ -3005,7 +3056,7 @@ function startDescent() {
   setState('descend');
   Sound.play('descente' + musicNo());
   if (G.oui) pop('Elle a dit OUI!', P.x - 60, P.y - 50, '#ffb0c8', 9);
-  G.becVu = false;
+  G.becVu = false; G.police = null;
 }
 
 function endVisit() {
@@ -3948,6 +3999,7 @@ function update(dt) {
         if (G.event && G.event.ambient === 'pluie') updateFoudre(dt);
         verifierDefi();
         if (G.stats.t > G.lev.parTime) { addAmour(-AMOUR.retardParSec * dt); if (!P.impatient) { P.impatient = true; pop("Didi s'impatiente...", P.x, P.y - 44, '#ff9ab0'); } } }
+      if (G.state === 'descend') updatePolice(dt);
       updateItems(dt); updateParticles(dt); ambient(dt); updateCamera(dt, G.state === 'descend' ? W - 105 : 105);
       if (G.state === 'monte' && !G.fauxDepart && G.stats.t > .6 && (P.x < G.lev.homeX + 28 || (G.stats.t > 5 && P.x < G.lev.homeX + 70))) {
         G.fauxDepart = true; Sound.fx('blip');
