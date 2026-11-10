@@ -88,7 +88,7 @@ const SAISON_NOM = { printemps: 'Printemps', ete: 'Été', automne: 'Automne', n
 function paramsVisite(n) {
   const d = Math.min(1, (n - 1) / 6);
   return {
-    L: Math.round((2300 + d * 1500) * 1.1 * 1.15 * 1.25), minS: .05 + d * .06, maxS: .15 + d * .13,
+    L: Math.round((2300 + d * 1500) * 1.1 * 1.15 * 1.12), minS: .05 + d * .06, maxS: .15 + d * .13,
     ruisseaux: n < 2 ? 0 : n < 5 ? 1 : 2,
     poids: {
       roche: 3, nid: 3, boue: 2, ours: 1 + d * 3, oiseau: 3 + d * 1.5, chien: 1 + d * 1.5, vache: .6 + d * .4, tracteur: n < 2 ? 0 : .8,
@@ -2260,6 +2260,29 @@ function txt(s, x, y, size, col, align, shadow, monde) {
   if (TXT_ZOOM) { const Z = TXT_ZOOM; x = Z.tx + (x - Z.ax) * Z.z; y = Z.ty + (y - Z.ay) * Z.z; if (monde) size *= Z.z; }
   TQ.push({ s, x, y, size, col: col || '#fff', align: align || 'left', shadow: shadow !== false, monde: !!monde });
 }
+// Sprites penchés (Groloup dans les côtes, en wheelie): dessinés à la résolution de l'écran, après le monde.
+// Tourné dans la petite image de 320x180, un sprite devient une bouillie de pixels; ici, chaque pixel reste un carré net.
+const SQ = [];
+let sqTmp = null;
+function flushSprites() {
+  for (const q of SQ) {
+    let src = q.img;
+    if (q.teintes.length) {   // nuit, pluie: le même voile que sur le décor
+      if (!sqTmp) sqTmp = mkCanvas(48, 40);
+      const [c, x] = sqTmp;
+      x.globalCompositeOperation = 'source-over'; x.clearRect(0, 0, 48, 40); x.drawImage(q.img, 0, 0);
+      x.globalCompositeOperation = 'source-atop';
+      for (const t of q.teintes) { x.fillStyle = t; x.fillRect(0, 0, 48, 40); }
+      src = c;
+    }
+    octx.save();
+    octx.translate(q.x * S, q.y * S); octx.rotate(q.a); octx.scale((q.flip ? -1 : 1) * S * q.z, S * q.z);
+    octx.drawImage(src, 0, 0, q.img.width, q.img.height, q.ox, q.oy, q.img.width, q.img.height);
+    octx.restore();
+  }
+  SQ.length = 0;
+}
+const SQ_ETATS = ['monte', 'descend', 'arrivee', 'intro', 'retour', 'titre'];
 function fontPx(size) { return Math.max(6, Math.round(size * S)); }
 function flushText() {
   octx.textBaseline = 'top';
@@ -2717,14 +2740,20 @@ function drawPlayer(cx, cy) {
   else img = SPR.effort[(P.phase | 0) % 8];
   const wa = P.wheelieA || 0;
   const px = Math.round(P.x - G.camX) + (cx - Math.round(G.camX));   // même arrondi que la caméra (+ secousse)
-  if (wa > .01) {
-    g.save(); g.translate(Math.round(px - P.face * 9), Math.round(P.y - cy)); g.rotate(P.angle - P.face * wa);
-    if (P.face < 0) g.scale(-1, 1);
-    g.drawImage(img, -7, -36); g.restore();
+  // pivot: la roue d'en arrière en wheelie, sinon le milieu du bicycle
+  const piv = wa > .01 ? { x: Math.round(px - P.face * 9), a: P.angle - P.face * wa, ox: -7 } : { x: px, a: P.angle, ox: -16 };
+  const py = Math.round(P.y - cy);
+  if (Math.abs(piv.a) > .02 && !G.paused && SQ_ETATS.includes(G.state)) {
+    let x = piv.x, y = py, z = 1;
+    if (TXT_ZOOM) { const Z = TXT_ZOOM; x = Z.tx + (x - Z.ax) * Z.z; y = Z.ty + (y - Z.ay) * Z.z; z = Z.z; }
+    const teintes = [];
+    if (G.pal.night) teintes.push('rgba(10,14,50,.18)');
+    if (G.event && G.event.ambient === 'pluie' && G.state !== 'titre') teintes.push('rgba(50,60,80,.16)');
+    SQ.push({ img, x, y, z, a: piv.a, flip: P.face < 0, ox: piv.ox, oy: -36, teintes });
   } else {
-    g.save(); g.translate(px, Math.round(P.y - cy)); g.rotate(P.angle);
+    g.save(); g.translate(piv.x, py); g.rotate(piv.a);
     if (P.face < 0) g.scale(-1, 1);
-    g.drawImage(img, -16, -36); g.restore();
+    g.drawImage(img, piv.ox, -36); g.restore();
   }
   if (P.stink > 0 && ((G.t * 6) | 0) % 2) rect(P.x - cx - 8, P.y - cy - 30, 1, 1, '#8ad860');
 }
@@ -4097,6 +4126,7 @@ function render() {
   const Z = ZOOM_IMAGE;
   if (Z) { octx.fillStyle = '#000'; octx.fillRect(0, 0, out.width, out.height); octx.drawImage(buf, Z.sx, Z.sy, W / Z.z, H / Z.z, 0, 0, out.width, out.height); }
   else octx.drawImage(buf, 0, 0, out.width, out.height);
+  flushSprites();
   if (UI_UTILISE) octx.drawImage(bufUI, 0, 0, out.width, out.height);
   flushText();
 }
