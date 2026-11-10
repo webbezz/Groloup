@@ -765,7 +765,6 @@ const Sound = {
       case 'cliquetis': this.osc('pulse12', 2300 + Math.random() * 400, t, .03, .05); this.noise(t, .025, .08, 5000, 'highpass'); break;
       case 'tchak': this.noise(t, .12, .35, 1300, 'bandpass'); this.osc('sine', 190, t, .12, .32, null, 60); break;
       case 'manque': this.osc('sawtooth', 150, t, .18, .1, null, 85); this.noise(t, .15, .16, 400, 'lowpass'); break;
-      case 'sirene': this.osc('pulse50', 660, t, .21, .12); this.osc('pulse50', 880, t + .21, .21, .12); break;
       case 'pompe': this.noise(t, .07, .13, 1700, 'bandpass'); this.osc('pulse25', 300, t, .07, .05, null, 520); break;
       case 'feu': this.noise(t, .6, .18, 500, 'lowpass'); this.osc('sine', 300, t, .5, .05, null, 80); break;
       case 'menu': this.osc('pulse25', 880, t, .05, .08); break;
@@ -1991,27 +1990,32 @@ function updateEnemies(dt) {
 }
 
 // ---------------- LA POLICE (au retour) ----------------
-// Un wheelie à toute vitesse dans la descente: une auto de police sort en arrière, gyrophare allumé, pis le suit quelques secondes.
-// Aucune conséquence: elle décroche dès qu'il ralentit ou qu'il remet sa roue à terre.
-const POLICE_MOTS = ['Wô, le jeune!', 'Moins vite!', 'Roues à terre!', 'Tasse-toi!', 'Pas si vite!'];
+// Surprise, au plus une fois par partie, pis pas à toutes les parties: à un retour tiré au hasard, après un bout de wheelie
+// (pas nécessairement le premier), une auto de police sort en arrière, gyrophare allumé, pis le suit un bon moment.
+// Aucune conséquence: elle décroche quand il ralentit, ou d'elle-même après une quinzaine de secondes.
+const POLICE_MOTS = ['Wô, le jeune!', 'Moins vite!', 'Roues à terre!', 'Tasse-toi!', 'Pas si vite!', 'Wô les moteurs!', 'Ta mère le sait-tu?'];
+function planPolice(debut) { return Math.random() < .7 ? debut + ((Math.random() * 5) | 0) : 0; }   // numéro de visite, 0 = pas cette partie
+function preparerPolice() {
+  const p = G.partie;
+  const due = p && p.policeVisite && p.policeVisite <= G.visite && !p.policeVue;
+  G.police = { actif: false, charge: 0, seuil: due ? 1.5 + Math.random() * 5 : null, lache: 0, t: 0, dx: 120, mot: 0 };
+}
 function updatePolice(dt) {
-  const Po = G.police = G.police || { actif: false, charge: 0, lache: 0, t: 0, dx: 120, sir: 0, mot: 0 };
-  const vite = P.wheelie && Math.abs(P.vx) > 120 && P.x > G.lev.homeX + 320 && P.x < G.lev.didiX - 200;
+  const Po = G.police; if (!Po) return;
+  const zone = P.x > G.lev.homeX + 320 && P.x < G.lev.didiX - 200;
   if (!Po.actif) {
-    if (G.partie && G.partie.police) return;   // surprise: une seule fois par partie
-    Po.charge = vite ? Po.charge + dt : 0;
-    if (Po.charge > .9) { Po.actif = true; Po.fuit = false; Po.t = 0; Po.lache = 0; Po.dx = 120; Po.sir = 0; Po.mot = .6; if (G.partie) G.partie.police = true; }
+    if (Po.seuil == null) return;
+    if (P.wheelie && Math.abs(P.vx) > 120 && zone) Po.charge += dt;   // le temps de wheelie s'additionne pendant la descente
+    if (Po.charge > Po.seuil && zone) { Po.actif = true; Po.fuit = false; Po.t = 0; Po.lache = 0; Po.dx = 120; Po.mot = .6; Po.seuil = null; G.partie.policeVue = true; }
     return;
   }
   Po.t += dt;
-  Po.lache = vite ? 0 : Po.lache + dt;
-  if (!Po.fuit && (Po.lache > .5 || Po.t > 7)) { Po.fuit = true; if (Po.t > 7) pop('Bon... on le pognera à la messe.', P.x - 20, P.y - 52, '#ffffff', 5, 1.8); }
+  Po.lache = Math.abs(P.vx) > 95 && zone ? 0 : Po.lache + dt;   // tant qu'il roule vite, elle reste; elle décroche quand il ralentit
+  if (!Po.fuit && (Po.lache > .8 || Po.t > 15)) { Po.fuit = true; if (Po.t > 15) pop('Bon... on le pognera à la messe.', P.x - 20, P.y - 52, '#ffffff', 5, 1.8); }
   if (Po.fuit) { Po.dx += 150 * dt; if (Po.dx > 125) Po.actif = false; return; }
   Po.dx = approach(Po.dx, 26, 110 * dt);
-  Po.sir -= dt; if (Po.sir <= 0) { Po.sir = .42; Sound.fx('sirene'); }
-  Po.mot -= dt;
   Po.ditT = Math.max(0, (Po.ditT || 0) - dt);
-  if (Po.mot <= 0) { Po.mot = 1.8; Po.dit = piocher('police', POLICE_MOTS); Po.ditT = 1.3; }   // le texte suit l'auto (dessiné avec elle)
+  if (Po.mot <= 0) { Po.mot = 2.4; Po.dit = piocher('police', POLICE_MOTS); Po.ditT = 1.4; } else Po.mot -= dt;   // le texte suit l'auto (dessiné avec elle)
 }
 
 const ARBRE_CHUTE = .65;
@@ -3064,7 +3068,7 @@ function startDescent() {
   setState('descend');
   Sound.play('descente' + musicNo());
   if (G.oui) pop('Elle a dit OUI!', P.x - 60, P.y - 50, '#ffb0c8', 9);
-  G.becVu = false; G.police = null;
+  G.becVu = false; preparerPolice();
 }
 
 function endVisit() {
@@ -3178,10 +3182,11 @@ function updateTitle(dt) {
     if (choix === 'continuer') {
       G.visite = G.save.visite; G.amour = G.save.amour; G.totalFleurs = G.save.fleurs || 0;
       chargerPaquets(); G.pet = G.save.pet || 0; G.vus = G.save.vus || { chanson: !!G.save.chanson }; G.partie = Object.assign({ plantes: 0, temps: 0, par: 0, coeurs: 0, ours: 0, sansFaute: 0, wheelie: 0 }, G.save.partie || {});
+      if (G.partie.policeVisite == null) { G.partie.policeVisite = planPolice(G.visite); G.partie.policeVue = !!G.partie.police; }
       if (!G.partie.defis) { G.partie.defis = planDefis(G.visite); if (G.partie.crevFaite) G.partie.defis.crev = -1; }
       G.oui = false; suivi('reprise', G.visite, { amour: Math.floor(G.amour) }); startVisit();
     } else {
-      G.visite = 1; G.amour = 0; G.totalFleurs = 0; chargerPaquets(); G.pet = 0; G.oui = false; G.vus = {}; G.partie = { plantes: 0, temps: 0, par: 0, coeurs: 0, ours: 0, sansFaute: 0, wheelie: 0, defis: planDefis(2) };
+      G.visite = 1; G.amour = 0; G.totalFleurs = 0; chargerPaquets(); G.pet = 0; G.oui = false; G.vus = {}; G.partie = { plantes: 0, temps: 0, par: 0, coeurs: 0, ours: 0, sansFaute: 0, wheelie: 0, defis: planDefis(2), policeVisite: planPolice(1), policeVue: false };
       suivi('nouvelle', 1);
       startVisit();   // les instructions restent dans « Comment jouer » au menu
     }
