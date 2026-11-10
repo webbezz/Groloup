@@ -765,7 +765,7 @@ const Sound = {
       case 'cliquetis': this.osc('pulse12', 2300 + Math.random() * 400, t, .03, .05); this.noise(t, .025, .08, 5000, 'highpass'); break;
       case 'tchak': this.noise(t, .12, .35, 1300, 'bandpass'); this.osc('sine', 190, t, .12, .32, null, 60); break;
       case 'manque': this.osc('sawtooth', 150, t, .18, .1, null, 85); this.noise(t, .15, .16, 400, 'lowpass'); break;
-      case 'sirene': this.osc('pulse25', 620, t, .2, .045, null, 900); this.osc('pulse25', 900, t + .2, .2, .045, null, 620); break;
+      case 'sirene': this.osc('pulse50', 660, t, .21, .12); this.osc('pulse50', 880, t + .21, .21, .12); break;
       case 'pompe': this.noise(t, .07, .13, 1700, 'bandpass'); this.osc('pulse25', 300, t, .07, .05, null, 520); break;
       case 'feu': this.noise(t, .6, .18, 500, 'lowpass'); this.osc('sine', 300, t, .5, .05, null, 80); break;
       case 'menu': this.osc('pulse25', 880, t, .05, .08); break;
@@ -1036,20 +1036,29 @@ function buildSprites() {
   for (let f = 0; f < 6; f++) SPR.walk.push(makeWalker(f, LOOK.groloup));
   SPR.stand = makeWalker(0, LOOK.groloup, true);
   SPR.bucheron = [makeBucheron(true), makeBucheron(false)];
-  // auto de police des années 70 (roule vers la gauche), gyrophare allumé / éteint
+  // grosse auto de police des années 70 (roule vers la gauche), gyrophare allumé / éteint
   SPR.police = [0, 1].map(f => {
-    const [c, x] = mkCanvas(42, 19);
-    const cr = '#ece6d2', crD = '#c8c0a8', bl = '#26427e', vi = '#9ad0f0';
-    rect2(x, 2, 9, 38, 6, cr); rect2(x, 2, 14, 38, 1, crD); rect2(x, 3, 8, 36, 1, cr);
-    rect2(x, 12, 4, 19, 5, cr); rect2(x, 13, 3, 17, 1, cr);
-    rect2(x, 13, 5, 7, 4, vi); rect2(x, 22, 5, 8, 4, vi); rect2(x, 13, 5, 7, 1, '#d8f0ff'); rect2(x, 22, 5, 8, 1, '#d8f0ff');
-    rect2(x, 15, 6, 3, 3, '#3a3a50'); rect2(x, 15, 5, 3, 1, '#26427e'); P1(x, 15, 7, '#e8b890');   // le policier pis sa casquette
-    rect2(x, 2, 11, 38, 2, bl);
-    rect2(x, 0, 12, 3, 2, '#9aa2ac'); rect2(x, 39, 12, 3, 2, '#9aa2ac');
-    rect2(x, 2, 10, 2, 1, '#ffe060'); rect2(x, 39, 10, 1, 1, '#c82020');
-    for (const wx of [10, 32]) { DISC(x, wx, 15, 3, 3, '#16161a'); rect2(x, wx - 1, 14, 2, 2, '#9aa2ac'); }
-    rect2(x, 20, 1, 3, 2, f ? '#ff3020' : '#8a1410'); rect2(x, 20, 3, 3, 1, '#3a3a40');
-    if (f) { P1(x, 19, 1, '#ff9080'); P1(x, 23, 1, '#ff9080'); P1(x, 21, 0, '#ff9080'); }
+    const [c, x] = mkCanvas(78, 34);
+    const cr = '#ece6d2', crD = '#c8c0a8', bl = '#26427e', vi = '#9ad0f0', ch = '#9aa2ac';
+    rect2(x, 3, 15, 72, 11, cr); rect2(x, 2, 17, 74, 8, cr); rect2(x, 3, 25, 72, 1, crD); rect2(x, 3, 15, 72, 1, '#fffaf0');
+    rect2(x, 27, 6, 30, 9, cr); rect2(x, 29, 5, 26, 1, cr); rect2(x, 29, 5, 26, 1, '#fffaf0');
+    rect2(x, 29, 8, 11, 7, vi); rect2(x, 42, 8, 13, 7, vi); rect2(x, 29, 8, 11, 1, '#d8f0ff'); rect2(x, 42, 8, 13, 1, '#d8f0ff');
+    rect2(x, 27, 9, 2, 6, cr); P1(x, 28, 8, cr);
+    // le policier: casquette, face, épaules
+    rect2(x, 32, 9, 5, 2, bl); rect2(x, 31, 10, 2, 1, bl); rect2(x, 33, 11, 3, 3, '#e8b890'); P1(x, 33, 12, '#1a1010'); rect2(x, 33, 14, 5, 1, bl);
+    rect2(x, 2, 24, 74, 1, bl);
+    // POLICE sur la portière
+    const LET = { P: ['111', '101', '111', '100', '100'], O: ['111', '101', '101', '101', '111'], L: ['100', '100', '100', '100', '111'],
+      I: ['111', '010', '010', '010', '111'], C: ['111', '100', '100', '100', '111'], E: ['111', '100', '111', '100', '111'] };
+    'POLICE'.split('').forEach((l, i) => LET[l].forEach((r, y) => { for (let k = 0; k < 3; k++) if (r[k] === '1') P1(x, 38 + i * 4 + k, 18 + y, bl); }));
+    rect2(x, 40, 16, 1, 9, crD); rect2(x, 62, 16, 1, 9, crD); rect2(x, 57, 19, 3, 1, ch);
+    // pare-chocs, phares, calandre
+    rect2(x, 0, 22, 4, 3, ch); rect2(x, 74, 22, 4, 3, ch);
+    rect2(x, 2, 17, 3, 3, '#ffe060'); P1(x, 2, 17, '#fff8c0'); rect2(x, 2, 20, 2, 2, '#3a3a40'); rect2(x, 74, 17, 2, 3, '#c82020');
+    for (const wx of [17, 60]) { DISC(x, wx, 27, 6, 6, '#16161a'); DISC(x, wx, 27, 3, 3, ch); DISC(x, wx, 27, 1, 1, '#3a3a40'); }
+    // gyrophare
+    rect2(x, 39, 1, 5, 4, f ? '#ff3020' : '#8a1410'); rect2(x, 38, 4, 7, 1, '#3a3a40');
+    if (f) { rect2(x, 37, 1, 1, 3, '#ff9080'); rect2(x, 45, 1, 1, 3, '#ff9080'); rect2(x, 40, 0, 3, 1, '#ff9080'); P1(x, 40, 2, '#ffd0c0'); }
     return c;
   });
   SPR.velo = (() => { const [c, x] = mkCanvas(32, 36); drawBikeFrame(x, 0, 0, 0); return c; })();
@@ -1984,28 +1993,25 @@ function updateEnemies(dt) {
 // ---------------- LA POLICE (au retour) ----------------
 // Un wheelie à toute vitesse dans la descente: une auto de police sort en arrière, gyrophare allumé, pis le suit quelques secondes.
 // Aucune conséquence: elle décroche dès qu'il ralentit ou qu'il remet sa roue à terre.
-const POLICE_MOTS = ['Wô, le jeune!', 'Moins vite!', 'Deux roues à terre!', 'Tasse-toi!', 'Pas si vite!'];
+const POLICE_MOTS = ['Wô, le jeune!', 'Moins vite!', 'Roues à terre!', 'Tasse-toi!', 'Pas si vite!'];
 function updatePolice(dt) {
-  const Po = G.police = G.police || { actif: false, charge: 0, lache: 0, t: 0, cd: 2, dx: 150, sir: 0, mot: 0 };
+  const Po = G.police = G.police || { actif: false, charge: 0, lache: 0, t: 0, dx: 120, sir: 0, mot: 0 };
   const vite = P.wheelie && Math.abs(P.vx) > 120 && P.x > G.lev.homeX + 320 && P.x < G.lev.didiX - 200;
-  Po.cd = Math.max(0, Po.cd - dt);
   if (!Po.actif) {
+    if (G.partie && G.partie.police) return;   // surprise: une seule fois par partie
     Po.charge = vite ? Po.charge + dt : 0;
-    if (Po.charge > .9 && Po.cd <= 0) { Po.actif = true; Po.fuit = false; Po.t = 0; Po.lache = 0; Po.dx = 135; Po.sir = 0; Po.mot = .7; }
+    if (Po.charge > .9) { Po.actif = true; Po.fuit = false; Po.t = 0; Po.lache = 0; Po.dx = 120; Po.sir = 0; Po.mot = .6; if (G.partie) G.partie.police = true; }
     return;
   }
   Po.t += dt;
   Po.lache = vite ? 0 : Po.lache + dt;
   if (!Po.fuit && (Po.lache > .5 || Po.t > 7)) { Po.fuit = true; if (Po.t > 7) pop('Bon... on le pognera à la messe.', P.x - 20, P.y - 52, '#ffffff', 5, 1.8); }
-  if (Po.fuit) {
-    Po.dx += 150 * dt;
-    if (Po.dx > 160) { Po.actif = false; Po.charge = 0; Po.cd = 5; }
-    return;
-  }
-  Po.dx = approach(Po.dx, 62, 90 * dt);
+  if (Po.fuit) { Po.dx += 150 * dt; if (Po.dx > 125) Po.actif = false; return; }
+  Po.dx = approach(Po.dx, 26, 110 * dt);
   Po.sir -= dt; if (Po.sir <= 0) { Po.sir = .42; Sound.fx('sirene'); }
   Po.mot -= dt;
-  if (Po.mot <= 0) { Po.mot = 1.7; const px = P.x + Po.dx; pop(piocher('police', POLICE_MOTS), P.x + 34, gyAt(G.lev, px) - 32, '#ffffff', 5, 1.3); }
+  Po.ditT = Math.max(0, (Po.ditT || 0) - dt);
+  if (Po.mot <= 0) { Po.mot = 1.8; Po.dit = piocher('police', POLICE_MOTS); Po.ditT = 1.3; }   // le texte suit l'auto (dessiné avec elle)
 }
 
 const ARBRE_CHUTE = .65;
@@ -2784,9 +2790,11 @@ function drawWorld() {
   drawGround(cx, cy);
   drawEntities(cx, cy);
   if (G.state === 'descend' && G.police && G.police.actif) {
-    const px = P.x + G.police.dx, X = Math.round(px - cx), Y = Math.round(gyAt(G.lev, clamp(px, 0, G.lev.L)) - cy);
-    spr(SPR.police[((G.t * 7) | 0) % 2], X - 21, Y - 19 + (((G.t * 14) | 0) % 2 ? 0 : 1));
-    if (Math.random() < .5) part('px', px + 18, gyAt(G.lev, clamp(px, 0, G.lev.L)) - 2, 30 + Math.random() * 30, -8 - Math.random() * 10, .4, G.pal.roadL);
+    // le devant de l'auto est à dx en arrière de Groloup; si la place manque, l'arrière dépasse de l'écran
+    const px = P.x + G.police.dx, sol = x => gyAt(G.lev, clamp(x, 0, G.lev.L));
+    spr(SPR.police[((G.t * 7) | 0) % 2], Math.round(px - cx), Math.round(sol(px + 38) - cy) - 33 + (((G.t * 14) | 0) % 2 ? 0 : 1));
+    if (G.police.ditT > 0 && !G.police.fuit) txt(G.police.dit, Math.min(W - 38, Math.round(px - cx) + 36), Math.round(sol(px + 38) - cy) - 44, 5, '#ffffff', 'center');
+    if (Math.random() < .6) part('px', px + 64, sol(px + 64) - 2, 30 + Math.random() * 30, -8 - Math.random() * 10, .4, G.pal.roadL);
   }
   if (G.state === 'monte' || G.state === 'arrivee') drawPere(cx, cy);
   drawPlayer(cx, cy);
