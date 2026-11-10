@@ -1993,7 +1993,7 @@ function updateEnemies(dt) {
 // Surprise, au plus une fois par partie, pis pas à toutes les parties: à un retour tiré au hasard, après un bout de wheelie
 // (pas nécessairement le premier), une auto de police sort en arrière, gyrophare allumé, pis le suit un bon moment.
 // Aucune conséquence: elle décroche quand il ralentit, ou d'elle-même après une quinzaine de secondes.
-const POLICE_MOTS = ['Wô, le jeune!', 'Moins vite!', 'Roues à terre!', 'Tasse-toi!', 'Pas si vite!', 'Wô les moteurs!', 'Ta mère le sait-tu?'];
+const POLICE_MOTS = ['Wô, le jeune!', 'Moins vite!', 'Roues à terre!', 'Tasse-toi!', 'Pas si vite!', 'Wô les moteurs!'];
 function planPolice(debut) { return Math.random() < .7 ? debut + ((Math.random() * 5) | 0) : 0; }   // numéro de visite, 0 = pas cette partie
 function preparerPolice() {
   const p = G.partie;
