@@ -2480,6 +2480,8 @@ const ZOOM_ETATS = { intro: 1, monte: 1, arrivee: 1, retour: 1, descend: 1, bila
 function cibleZoom() {
   const lev = G.lev;
   if (!lev || !ZOOM_ETATS[G.state] || lev.didiX == null || lev.didiX < 0) return { z: 1, k: 0, hx: P.x, sol: 128 };
+  // crevaison: gros plan sur Groloup pis sa pompe, sous le panneau du mini-jeu
+  if (G.crev && G.state === 'monte') return { z: 1.8, k: 1, hx: P.x + 8, sol: 160 };
   const maisons = [lev.homeX - 8, lev.didiX - 4];
   const hx = Math.abs(P.x - maisons[0]) < Math.abs(P.x - maisons[1]) ? maisons[0] : maisons[1];
   const k = clamp(W / (Math.abs(hx - P.x) + 120) - 1, 0, 1);   // 0 = loin, 1 = tout près de la maison
