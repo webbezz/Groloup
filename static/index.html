@@ -71,12 +71,12 @@ const CONFIG = {
 
 // Jauge d'amour (0 à 100). Une partie typique = 6-7 visites.
 const AMOUR = {
-  trajet: 11,       // gagné progressivement en montant la côte
-  fleur: .25,       // par fleur cueillie
+  trajet: 8,        // gagné progressivement en montant la côte
+  fleurs: 4,        // pour TOUTES les fleurs du trajet (chaque fleur vaut sa part: un trajet plus long ne donne pas plus d'amour)
   plante: -2,       // chaque fois qu'il se plante
   plouf: -3,        // tombé dans le ruisseau
   retardParSec: .3, // Didi s'impatiente après le temps normal
-  coeurDescente: .2,// petit bonus d'amour en redescendant
+  coeurs: 3,        // pour TOUS les coeurs de la descente (chaque coeur vaut sa part)
   demande: 95,      // seuil pour la grande demande
 };
 // Jauge de pet (boost): les bleuets la remplissent, elle se garde d'une visite à l'autre
@@ -308,7 +308,7 @@ function echangeOk(x, ctx) {
   if (x.soir && !ctx.soir) return false;
   if (x.sauf && (ctx.evenement === x.sauf || ctx.defi === x.sauf)) return false;
   if (x.si === 'encore' && !ctx.encore) return false;
-  if (x.si === 'peu' && !(ctx.fleurs > 0 && ctx.fleurs <= 4)) return false;
+  if (x.si === 'peu' && !ctx.peu) return false;
   if (x.min && (ctx.nb || 0) < x.min) return false;
   return true;
 }
@@ -1501,6 +1501,7 @@ function buildUp(n, seed, ev, nuit) {
   lev.items.push({ k: 'coeur', x: hx, y: G(hx) - 34 });
   decorate(lev, rng, isBusy);
   lev.parTime = L / 48 + 8;
+  lev.nbFleurs = Math.max(1, lev.items.filter(it => it.k === 'fleur').length);
   return lev;
 }
 
@@ -1560,6 +1561,7 @@ function buildDescent(up, seed) {
       lev.items.push({ k: 'coeurD', x: hx, y: G(hx) - 8 - (r < .55 ? Math.sin(i / (cnt - 1) * Math.PI) * 30 : 0) });
     }
   }
+  lev.nbCoeurs = Math.max(1, lev.items.filter(it => it.k === 'coeurD').length); lev.nbFleurs = up.nbFleurs;
   return lev;
 }
 
@@ -2173,7 +2175,7 @@ function updateItems(dt) {
     it.got = true;
     switch (it.k) {
       case 'fleur':
-        G.stats.fleurs++; addAmour(AMOUR.fleur); Sound.fx('fleur');
+        G.stats.fleurs++; addAmour(AMOUR.fleurs / (G.lev.nbFleurs || 30)); Sound.fx('fleur');
         if (G.totalFleurs + G.stats.fleurs >= 100) badge('jardinier');
         burst(it.x, it.y, 5, ['#ffffff', '#b48aff', '#ff8ac0'][it.v || 0], 40);
         break;
@@ -2181,14 +2183,14 @@ function updateItems(dt) {
         P.stamina = Math.min(1, P.stamina + .45); if (P.stamina >= .4) P.walking = false;
         Sound.fx('pomme'); pop('Miam!', it.x, it.y - 8, '#ffd0d0'); break;
       case 'coeur':
-        addAmour(2, it.x, it.y - 10, '+2 amour'); Sound.fx('coeur'); burst(it.x, it.y, 8, '#ff4d6d', 50); break;
+        addAmour(1, it.x, it.y - 10, '+1 amour'); Sound.fx('coeur'); burst(it.x, it.y, 8, '#ff4d6d', 50); break;
       case 'bleuet':
         G.pet = Math.min(100, G.pet + PET.bleuet); Sound.fx('bleuet');
         burst(it.x, it.y, 4, '#9aa8ff', 30);
         if (G.pet >= 100) { pop('Jauge de vent pleine!', it.x, it.y - 10, '#c8b4ff', 4.5); badge('bleuetiere'); }
         break;
       case 'coeurD':
-        G.stats.coeurs++; addAmour(AMOUR.coeurDescente); Sound.fx('fleur');
+        G.stats.coeurs++; addAmour(AMOUR.coeurs / (G.lev.nbCoeurs || 100)); Sound.fx('fleur');
         part('heart', it.x, it.y, 0, -40, .7); break;
     }
   }
@@ -2818,7 +2820,8 @@ const COUL_FLEURS = ['#ffffff', '#ffe060', '#ff8ac0', '#b48aff', '#ff6a5a', '#8a
 function drawBouquet(x, y, n, penche) {
   penche = penche || 0;   // > 0: le bouquet penche vers la droite (tenu d'une main, à côté du visage)
   x = Math.round(x); y = Math.round(y);
-  const tier = n >= 25 ? 4 : n >= 15 ? 3 : n >= 10 ? 2 : n >= 5 ? 1 : 0;
+  const part = n / ((G.lev && G.lev.nbFleurs) || 30);   // la grosseur suit la part des fleurs du trajet
+  const tier = part >= .8 ? 4 : part >= .5 ? 3 : part >= .3 ? 2 : part >= .12 ? 1 : 0;
   const tetes = [3, 4, 6, 9, 13][tier], haut = [5, 5, 6, 8, 10][tier], large = [3, 4, 6, 9, 12][tier];
   const tops = [];
   for (let i = 0; i < tetes; i++) {
@@ -2949,6 +2952,8 @@ function startVisit() {
   Sound.play('amour');
 }
 
+// gros bouquet: au moins la moitié des fleurs du trajet
+function grosBouquet() { return Math.max(15, Math.round((G.lev.nbFleurs || 30) * .5)); }
 function startArrival() {
   setState('arrivee');
   const st = G.stats, lev = G.lev;
@@ -2972,7 +2977,7 @@ function startArrival() {
   const L = A.lines;
   addAmour(1);
   G.vus = G.vus || {};
-  const ctx = { defi: st.defi && st.defi.type === 'bois' ? 'pere' : null, soir: G.saison === 'nuit', evenement: G.event ? G.event.id : null, encore: G.totalFleurs > 0, nb: 0, fleurs: st.fleurs };
+  const ctx = { defi: st.defi && st.defi.type === 'bois' ? 'pere' : null, soir: G.saison === 'nuit', evenement: G.event ? G.event.id : null, encore: G.totalFleurs > 0, nb: 0, fleurs: st.fleurs, peu: st.fleurs > 0 && st.fleurs <= Math.max(4, (lev.nbFleurs || 30) * .15) };
   const auj = ctx.soir ? 'à soir' : "aujourd'hui";
   const ajouter = ex => { if (ex) for (const l of lignesDe(ex)) L.push([l[0], l[1].replace('{auj}', auj)]); };
   const tirer = (nom, pool, extra) => piocher(nom, pool, x => echangeOk(x, Object.assign({}, ctx, extra || {})));
@@ -2998,7 +3003,7 @@ function startArrival() {
   else if (st.pets >= 3) ex = tirer('pets', DIALOGUES.pets);
   else if (st.t > lev.parTime) ex = tirer('retard', DIALOGUES.retard);
   else if (st.fleurs === 0) ex = tirer('pasDeFleurs', DIALOGUES.pasDeFleurs);
-  else if (st.fleurs >= 15) { A.donIdx = L.length; ex = tirer('grosBouquet', DIALOGUES.grosBouquet); }
+  else if (st.fleurs >= grosBouquet()) { A.donIdx = L.length; ex = tirer('grosBouquet', DIALOGUES.grosBouquet); }
   else if (st.t < lev.parTime * .7) ex = tirer('vite', DIALOGUES.vite);
   else {
     // visite ordinaire: une fois sur deux, Didi parle plutôt de la journée (la remarque remplace l'histoire du bouquet)
@@ -3007,7 +3012,7 @@ function startArrival() {
     else { A.donIdx = L.length; ex = tirer('bouquet', DIALOGUES.bouquet); }
   }
   ajouter(ex);
-  if (st.fleurs >= 15) A.bonus = (A.bonus || 0) + 1;
+  if (st.fleurs >= grosBouquet()) A.bonus = (A.bonus || 0) + 1;
   if (st.t < lev.parTime * .7) A.bonus = (A.bonus || 0) + 1;
   if (st.plantes === 0) A.sansFaute = true;
 }
