@@ -1366,8 +1366,11 @@ function buildUp(n, seed, ev, nuit, bon, rang) {
   const cpEvery = L / 3; let nextCp = cpEvery;
   const creekAt = [];
   for (let k = 0; k < p.ruisseaux; k++) creekAt.push(L * (k + 1) / (p.ruisseaux + 1) + (rng() - .5) * 200);
+  // les bâtiments du rang, dans l'ordre tiré pour la partie: chacun a son bout de chemin droit, les pentes sont entre eux
+  const rangAt = (rang || RANG.map(b => b.id)).map(id => RANG.find(b => b.id === id)).filter(Boolean).map((b, i, a) => ({ b, x: 430 + (i + .5) * (L - 900) / a.length }));
   while (x < L - 320) {
-    if (x >= nextCp) { push(100, 0, 'repos'); nextCp += cpEvery; }
+    if (rangAt.length && x >= rangAt[0].x - rangAt[0].b.l - 30) { const r = rangAt.shift(); push(r.b.l * 2 + 60, 0, 'rang'); const sg = segs[segs.length - 1]; sg.id = r.b.id; sg.l = r.b.l; }
+    else if (x >= nextCp) { push(100, 0, 'repos'); nextCp += cpEvery; }
     else if (creekAt.length && x >= creekAt[0]) { creekAt.shift(); push(170, 0, 'ruisseau'); }
     else {
       push(130 + rng() * 170, p.minS + rng() * (p.maxS - p.minS));
@@ -1409,17 +1412,7 @@ function buildUp(n, seed, ev, nuit, bon, rang) {
   lev.decor.push({ k: 'maison', x: lev.homeX, style: 'groloup' });
   lev.decor.push({ k: 'maison', x: lev.didiX, style: 'didi' });
   lev.decor.push({ k: 'panneau', x: 150 });
-  // les bâtiments du rang: dans l'ordre tiré pour la partie, répartis le long du trajet, chacun sur le terrain le plus plat des environs
-  { const ids = (rang || RANG.map(b => b.id)).filter(id => RANG.some(b => b.id === id)), nb = ids.length, xa = 430, xb = L - 470;
-    ids.forEach((id, i) => {
-      const b = RANG.find(q => q.id === id), cible = xa + (i + .5) * (xb - xa) / nb; let best = cible, bs = 1e9;
-      for (let xx = cible - 90; xx <= cible + 90; xx += 6) {
-        if (lev.creeks.some(c => xx + b.l > c.x0 - 10 && xx - b.l < c.x1 + 10)) continue;
-        let lo = 1e9, hi = -1e9; for (let k = -b.l; k <= b.l; k += 4) { const v = G(xx + k); if (v < lo) lo = v; if (v > hi) hi = v; }
-        const sc = (hi - lo) + Math.abs(xx - cible) * .04; if (sc < bs) { bs = sc; best = xx; }
-      }
-      lev.decor.push({ k: 'rang', id, x: Math.round(best), l: b.l });
-    }); }
+  for (const sg of segs) if (sg.tag === 'rang') lev.decor.push({ k: 'rang', id: sg.id, x: Math.round((sg.x0 + sg.x1) / 2), l: sg.l });   // chaque bâtiment du rang au milieu de son bout de chemin droit
   const isBusy = xx => xx < 300 || xx > L - 330 || busy.some(b => xx > b[0] && xx < b[1]);
 
   // obstacles et ennemis aléatoires
