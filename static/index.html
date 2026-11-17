@@ -793,11 +793,19 @@ const Sound = {
 };
 
 // ---------------- SPRITES (pixel art généré en code) ----------------
+// Finesse du dessin: le jeu se mesure toujours en points de 320x180, mais chaque point vaut K x K points d'image.
+// Un dessin fait en points entiers reste pareil qu'avant; pour un détail fin, on dessine au demi-point (voir fi()).
+const K = 2;
 function mkCanvas(w, h) {
-  const c = document.createElement('canvas'); c.width = w; c.height = h;
-  const x = c.getContext('2d'); x.imageSmoothingEnabled = false;
+  const c = document.createElement('canvas'); c.width = Math.round(w * K); c.height = Math.round(h * K);
+  c.lw = w; c.lh = h;   // sa taille en points du jeu
+  const x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.scale(K, K);
   return [c, x];
 }
+// Copie une toile dans une autre, en points du jeu
+function blit(x, img, dx, dy, dw, dh) { x.drawImage(img, dx, dy, dw === undefined ? img.lw : dw, dh === undefined ? img.lh : dh); }
+// Arrondi au point d'image le plus proche (le demi-point, quand K vaut 2)
+function fi(v) { return Math.round(v * K) / K; }
 function P1(x, X, Y, col) { x.fillStyle = col; x.fillRect(Math.round(X), Math.round(Y), 1, 1); }
 function LN(x, x0, y0, x1, y1, col) {
   x0 = Math.round(x0); y0 = Math.round(y0); x1 = Math.round(x1); y1 = Math.round(y1);
@@ -2322,14 +2330,14 @@ function flushSprites() {
     if (q.teintes.length) {   // nuit, pluie: le même voile que sur le décor
       if (!sqTmp) sqTmp = mkCanvas(96, 48);
       const [c, x] = sqTmp;
-      x.globalCompositeOperation = 'source-over'; x.clearRect(0, 0, c.width, c.height); x.drawImage(q.img, 0, 0);
+      x.globalCompositeOperation = 'source-over'; x.clearRect(0, 0, c.lw, c.lh); blit(x, q.img, 0, 0);
       x.globalCompositeOperation = 'source-atop';
-      for (const t of q.teintes) { x.fillStyle = t; x.fillRect(0, 0, c.width, c.height); }
+      for (const t of q.teintes) { x.fillStyle = t; x.fillRect(0, 0, c.lw, c.lh); }
       src = c;
     }
     octx.save();
     octx.translate(q.x * S, q.y * S); octx.rotate(q.a); octx.scale((q.flip ? -1 : 1) * S * q.z, S * q.z);
-    octx.drawImage(src, 0, 0, q.img.width, q.img.height, q.ox, q.oy, q.img.width, q.img.height);
+    octx.drawImage(src, 0, 0, q.img.width, q.img.height, q.ox, q.oy, q.img.lw, q.img.lh);
     octx.restore();
   }
   SQ.length = 0;
@@ -2361,14 +2369,14 @@ function wrap(s, size, maxW) {
 }
 function spr(img, x, y, flip) {
   x = Math.round(x); y = Math.round(y);
-  if (!flip) { g.drawImage(img, x, y); return; }
-  g.save(); g.translate(x + img.width, y); g.scale(-1, 1); g.drawImage(img, 0, 0); g.restore();
+  if (!flip) { blit(g, img, x, y); return; }
+  g.save(); g.translate(x + img.lw, y); g.scale(-1, 1); blit(g, img, 0, 0); g.restore();
 }
 function rect(x, y, w, h, col) { g.fillStyle = col; g.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); }
 
 function drawSky(cx, cy) {
   const pal = G.pal, bg = G.bg, rise = clamp((G.camYBottom || 0) - cy, 0, 900);
-  g.drawImage(bg.sky, 0, 0);
+  blit(g, bg.sky, 0, 0);
   if (pal.night) {
     DISC(g, 262, 26, 9, 9, '#f4f0d0'); DISC(g, 266, 23, 8, 8, bg === G.bg ? pal.sky[0] : '#000');
   } else {
@@ -2380,10 +2388,10 @@ function drawSky(cx, cy) {
     DISC(g, x, y + 2, 16, 4, pal.cloudD); DISC(g, x - 6, y, 9, 5, pal.cloud); DISC(g, x + 6, y - 1, 10, 6, pal.cloud);
   }
   const my = Math.round(4 + rise * .04), mx = -(((cx * .1) % 640) + 640) % 640;
-  g.drawImage(bg.mtn, Math.round(mx), my); g.drawImage(bg.mtn, Math.round(mx) + 640, my);
+  blit(g, bg.mtn, Math.round(mx), my); blit(g, bg.mtn, Math.round(mx) + 640, my);
   rect(0, my + 109, W, H, pal.mtn);
   const hy = Math.round(42 + rise * .07), hx = -(((cx * .3) % 640) + 640) % 640;
-  g.drawImage(bg.hill, Math.round(hx), hy); g.drawImage(bg.hill, Math.round(hx) + 640, hy);
+  blit(g, bg.hill, Math.round(hx), hy); blit(g, bg.hill, Math.round(hx) + 640, hy);
   rect(0, hy + 89, W, H, pal.hill);
 }
 
@@ -2805,9 +2813,9 @@ function drawEntities(cx, cy) {
 function drawTracteur(e, X, Y, f) {
   if (e.state === 'part') {
     const img = SPR.tracteurDos[f], sc = Math.max(.4, 1 - e.dy / 60);
-    const w = Math.round(img.width * sc), h = Math.round(img.height * sc);
+    const w = Math.round(img.lw * sc), h = Math.round(img.lh * sc);
     if (e.dy > 34) g.globalAlpha = Math.max(0, 1 - (e.dy - 34) / 14);
-    g.drawImage(img, X - (w >> 1), Math.round(Y - 2 - Math.min(5, e.dy * .12)) - h, w, h); g.globalAlpha = 1;
+    blit(g, img, X - (w >> 1), Math.round(Y - 2 - Math.min(5, e.dy * .12)) - h, w, h); g.globalAlpha = 1;
     return;
   }
   const a = Math.atan((gyAt(G.lev, e.x + 12) - gyAt(G.lev, e.x - 7)) / 19);
@@ -2989,7 +2997,7 @@ function drawPlayer(cx, cy) {
   else {
     g.save(); g.translate(piv.x, py); g.rotate(piv.a);
     if (P.face < 0) g.scale(-1, 1);
-    g.drawImage(img, piv.ox, -36); g.restore();
+    blit(g, img, piv.ox, -36); g.restore();
   }
   if (P.stink > 0 && ((G.t * 6) | 0) % 2) rect(P.x - cx - 8, P.y - cy - 30, 1, 1, '#8ad860');
 }
@@ -3570,9 +3578,9 @@ function drawWedding(x, t) {
   }
   x.fillStyle = 'rgba(80,50,30,.35)'; x.fillRect(0, 54, 160, 36);
   voileAuVent(x, 'foyer', 63 - Math.round(fin.offCur.foyer), 44);
-  x.drawImage(SPR.mariee, 63 - Math.round(fin.offCur.foyer), 44);
-  x.drawImage(fin.yeux.foyer > 0 ? SPR.marieYF : SPR.marie, 84, 44);
-  x.drawImage(SPR.tapis, 59, 62);
+  blit(x, SPR.mariee, 63 - Math.round(fin.offCur.foyer), 44);
+  blit(x, fin.yeux.foyer > 0 ? SPR.marieYF : SPR.marie, 84, 44);
+  blit(x, SPR.tapis, 59, 62);
 }
 // Finale en album photo: 1) devant le foyer  2) sous le grand pin  3) 50 ans plus tard
 const FIN_T = { pin: 8.4, noir: 15.5, tandem: 18 };
@@ -3713,7 +3721,7 @@ function drawPin(x, t) {
   sR(x, 0, 60, 160, 30, '#5e7e3c');
   for (let k = 0; k < 90; k++) P1(x, hsh(k * 11) % 160, 61 + hsh(k * 17) % 28, k % 2 ? '#7a9a4a' : '#4a6a2e');
   voileAuVent(x, 'pin', 66 - Math.round(fin.offCur.pin), 47);
-  x.drawImage(SPR.mariee, 66 - Math.round(fin.offCur.pin), 47); x.drawImage(fin.yeux.pin > 0 ? SPR.marieYF : SPR.marie, 80, 47);
+  blit(x, SPR.mariee, 66 - Math.round(fin.offCur.pin), 47); blit(x, fin.yeux.pin > 0 ? SPR.marieYF : SPR.marie, 80, 47);
 }
 function bouffees(x) {
   for (const p of fin.puffs) { const r = 1 + Math.round((1 - p.life / p.max) * 4); DISC(x, p.x, p.y, r, r, p.life / p.max > .5 ? 'rgba(190,220,150,.7)' : 'rgba(200,215,170,.45)'); }
@@ -3730,7 +3738,7 @@ function drawFinale() {
   const t = G.stateT, T = t - FIN_T.tandem;
   if (t < FIN_T.pin) {
     drawWedding(fin.scene.x, t); bouffees(fin.scene.x);
-    g.drawImage(fin.scene.c, 0, 0, 320, 180);
+    blit(g, fin.scene.c, 0, 0, 320, 180);
     for (const p of G.parts) if (p.kind === 'heart') spr(SPR.heart, p.x - 3, p.y - 3);
     cadrePhoto('Mariage de ' + CONFIG.mariageNoms + ' le ' + CONFIG.mariageDate + ' à ' + CONFIG.mariageLieu);
     texteFinale(); flashBlanc();
@@ -3740,7 +3748,7 @@ function drawFinale() {
   }
   if (t < FIN_T.noir) {
     drawPin(fin.scene.x, t); bouffees(fin.scene.x);
-    g.drawImage(fin.scene.c, 0, 0, 320, 180);
+    blit(g, fin.scene.c, 0, 0, 320, 180);
     for (const p of G.parts) if (p.kind === 'confetti') rect(p.x, p.y, 2, 2, p.col);
     cadrePhoto('Les nouveaux mariés, sous le grand pin');
     texteFinale(); flashBlanc();
@@ -3763,7 +3771,7 @@ function drawFinale() {
     if (dx - cx > -20) spr(SPR.chien[f], Math.round(dx - cx) - 7, Math.round(gyAt(fin.flat, dx) - cy) - 8, c.etat !== 'fuit');
   }
   g.save(); g.translate(Math.round(px - cx), Math.round(py - cy)); g.rotate(Math.atan(slopeAt(fin.flat, px)));
-  g.drawImage(SPR.tandem[((G.t * 9) | 0) % 8], -23, -36);
+  blit(g, SPR.tandem[((G.t * 9) | 0) % 8], -23, -36);
   if (fin.dringT > 0 && ((G.t * 20) | 0) % 2) { rect(15, -19, 3, 3, '#fff6a0'); rect(18, -21, 1, 1, '#ffffff'); rect(14, -21, 1, 1, '#ffffff'); }
   g.restore();
   drawParticles(cx, cy);
@@ -3834,7 +3842,7 @@ function drawAide() {
   let y = 46;
   for (const [ic, t] of p.lignes) {
     const img = ic === 'fleurs' ? SPR.fleurs[0] : ic === 'oiseau' ? SPR.oiseau[0] : SPR[ic];
-    if (img) spr(img, 30 - (img.width >> 1), y + 1);
+    if (img) spr(img, 30 - (img.lw >> 1), y + 1);
     const lines = wrap(t, 4.6, 238);
     lines.forEach((l, i) => txt(l, 48, y + i * 8, 4.6, '#ffffff'));
     y += Math.max(14, lines.length * 8 + 6);
@@ -3972,7 +3980,7 @@ function drawIntermede() {
       for (let i = 0; i < 160; i += 4) { const h = 6 + hsh(i) % 9; for (let k = 0; k < h; k++) { const w = k >> 1; sR(x, i - w, 52 - h + k, w * 2 + 1, 1, '#0a1620'); } }
       sR(x, 0, 52, 160, 38, '#1c3426');
       DISC(x, 80, 56, 22, 5, 'rgba(255,140,40,.25)');
-      x.drawImage(SPR.didi, 42, 33); x.drawImage(SPR.groloupFace, 106, 33);
+      blit(x, SPR.didi, 42, 33); blit(x, SPR.groloupFace, 106, 33);
       guitare(x, 50, 47);
       sR(x, 38, 50, 22, 4, '#6a4426'); sR(x, 102, 50, 22, 4, '#6a4426');
       sR(x, 70, 55, 20, 2, '#5a3a20'); sR(x, 72, 53, 16, 2, '#7a4a28');
@@ -3981,16 +3989,16 @@ function drawIntermede() {
         sR(x, fx, 53 - hgt, 1, hgt, i % 3 ? '#ff8a20' : '#ffd040');
       }
       const chante = I.lines[I.i] && I.lines[I.i][2], nn = chante ? 8 : 3;
-      for (let i = 0; i < nn; i++) { const p = (t * (chante ? .9 : .6) + i / nn) % 1; x.drawImage(SPR.note, 52 + (i % 4) * 7 + Math.sin(p * 6 + i) * 3, 42 - p * 34); }
+      for (let i = 0; i < nn; i++) { const p = (t * (chante ? .9 : .6) + i / nn) % 1; blit(x, SPR.note, 52 + (i % 4) * 7 + Math.sin(p * 6 + i) * 3, 42 - p * 34); }
       break;
     }
     case 'portrait': {
       murMaison(x);
       sR(x, 20, 12, 14, 14, '#5a3a22'); sR(x, 21, 13, 12, 12, '#9cc4dc'); sR(x, 27, 13, 1, 12, '#5a3a22');
       sR(x, 0, 54, 160, 36, '#9a7a5a'); for (let i = 0; i < 160; i += 8) sR(x, i, 54, 1, 36, '#7a5a3a');
-      x.drawImage(SPR.groloupFace, 38, 33);
+      blit(x, SPR.groloupFace, 38, 33);
       sR(x, 36, 46, 16, 2, '#7a4a28'); sR(x, 37, 48, 2, 7, '#7a4a28'); sR(x, 49, 48, 2, 7, '#7a4a28');
-      x.drawImage(SPR.fleurs[2], 47, 40);
+      blit(x, SPR.fleurs[2], 47, 40);
       // chevalet
       LN(x, 82, 56, 88, 26, '#8a5a30'); LN(x, 98, 56, 92, 26, '#8a5a30'); LN(x, 90, 56, 90, 30, '#6a4020');
       sR(x, 80, 26, 20, 22, '#ffffff'); sR(x, 80, 47, 20, 1, '#8a5a30');
@@ -3998,7 +4006,7 @@ function drawIntermede() {
         sR(x, 86, 29, 8, 3, '#9a4c22'); sR(x, 86, 32, 8, 6, '#f2c49c'); P1(x, 88, 34, '#222'); P1(x, 91, 34, '#222');
         sR(x, 89, 36, 2, 1, '#8a3020'); sR(x, 84, 38, 12, 8, '#86b4e4'); sR(x, 86, 32, 1, 4, '#6a3014'); sR(x, 93, 32, 1, 4, '#6a3014');
       } else for (let i = 0; i < 8; i++) sR(x, 82 + (hsh(i + ((t * 2) | 0)) % 15), 28 + (hsh(i * 5) % 17), 3, 1, ['#86b4e4', '#9a4c22', '#f2c49c'][i % 3]);
-      x.drawImage(SPR.didi, 104, 34);
+      blit(x, SPR.didi, 104, 34);
       LN(x, 104, 44, 99, 40 + bob, '#7a4a28'); P1(x, 99, 39 + bob, '#e83a5a');
       DISC(x, 118, 45, 3, 2, '#d8b888'); P1(x, 117, 44, '#e83a3a'); P1(x, 119, 45, '#3a7ae8'); P1(x, 118, 46, '#ffd23a');
       break;
@@ -4009,13 +4017,13 @@ function drawIntermede() {
       sR(x, 64, 8, 32, 22, '#ffffff'); sR(x, 66, 10, 28, 18, '#9cd0f0'); sR(x, 79, 10, 2, 18, '#ffffff');
       for (let k = 0; k < 18; k += 2) { sR(x, 64, 8 + k, 5, 1, '#d83a3a'); sR(x, 91, 8 + k, 5, 1, '#d83a3a'); }
       sR(x, 0, 60, 160, 30, '#b88a5a');
-      x.drawImage(SPR.didi, 46, 30); x.drawImage(SPR.groloupFace, 102, 30);
+      blit(x, SPR.didi, 46, 30); blit(x, SPR.groloupFace, 102, 30);
       for (let xx = 34; xx < 126; xx += 2) for (let yy = 48; yy < 58; yy += 2) sR(x, xx, yy, 2, 2, ((xx + yy) >> 1) % 2 ? '#e84a4a' : '#ffffff');
       sR(x, 38, 58, 2, 10, '#7a4a28'); sR(x, 120, 58, 2, 10, '#7a4a28');
       sR(x, 70, 46, 20, 2, '#d8d8e0');
       sR(x, 72, 38, 16, 8, '#8a5a30'); sR(x, 72, 41, 16, 1, '#f4e8d0'); sR(x, 72, 37, 16, 2, '#f4e8d0');
       if (showLine >= 1) sR(x, 84, 37, 4, 9, '#f4e0b0');
-      SPR.heart && x.drawImage(SPR.heart, 76, 31);
+      SPR.heart && blit(x, SPR.heart, 76, 31);
       for (let i = 0; i < 3; i++) { const p = (t * .8 + i / 3) % 1; P1(x, 76 + i * 4 + Math.sin(p * 9), 34 - p * 12, 'rgba(255,255,255,.7)'); }
       sR(x, 104, 46, 6, 2, '#d8d8e0');
       break;
@@ -4029,7 +4037,7 @@ function drawIntermede() {
       sR(x, 0, 56, 160, 34, '#9a7a5a'); for (let i = 0; i < 160; i += 8) sR(x, i, 56, 1, 34, '#7a5a3a');
       const sw = Math.round(Math.sin(t * 1.4) * 1.5);
       LN(x, 58, 7, 58 + sw, 46, '#888'); LN(x, 102, 7, 102 + sw, 46, '#888');
-      x.drawImage(SPR.didi, 64 + sw, 30); x.drawImage(SPR.groloupFace, 84 + sw, 30);
+      blit(x, SPR.didi, 64 + sw, 30); blit(x, SPR.groloupFace, 84 + sw, 30);
       sR(x, 56 + sw, 44, 48, 3, '#8a5a30'); sR(x, 56 + sw, 47, 48, 4, '#6a4020'); sR(x, 56 + sw, 38, 2, 9, '#8a5a30'); sR(x, 102 + sw, 38, 2, 9, '#8a5a30');
       if (sunset) { sR(x, 116, 46, 10, 2, '#7a4a28'); sR(x, 118, 48, 2, 8, '#7a4a28'); sR(x, 118, 41, 3, 5, '#ffe060'); sR(x, 122, 41, 3, 5, '#ffe060'); }
       else {
@@ -4053,10 +4061,10 @@ function drawIntermede() {
       for (let k = 0; k < 14; k++) { const lx = 40 + k * 6, ly = 20 + Math.sin(k / 13 * Math.PI) * 6; P1(x, lx, ly, ['#ff6a8a', '#ffe060', '#8ad8ff', '#b48aff'][(k + ((t * 2) | 0)) % 4]); }
       // la danse
       const sw = Math.round(Math.sin(t * 2.2) * 2), by = Math.round(Math.abs(Math.sin(t * 2.2)) * -1);
-      x.drawImage(SPR.didi, 66 + sw, 32 + by); x.drawImage(SPR.groloupFace, 77 + sw, 32 - by);
+      blit(x, SPR.didi, 66 + sw, 32 + by); blit(x, SPR.groloupFace, 77 + sw, 32 - by);
       if (Math.sin(t * 6) > 0) { P1(x, 66 + sw + 11, 44 + by, '#ffffff'); P1(x, 66 + sw + 11, 43 + by, '#ffe060'); P1(x, 66 + sw + 12, 44 + by, '#ffe060'); P1(x, 66 + sw + 11, 45 + by, '#ffe060'); P1(x, 66 + sw + 10, 44 + by, '#ffe060'); }
       const nh = I.i >= 7 ? 8 : 4;
-      for (let k = 0; k < nh; k++) { const p = (t * .35 + k / nh) % 1; x.drawImage(SPR.heart, 60 + (hsh(k * 5) % 40) + Math.sin(p * 7 + k) * 3, 46 - p * 44); }
+      for (let k = 0; k < nh; k++) { const p = (t * .35 + k / nh) % 1; blit(x, SPR.heart, 60 + (hsh(k * 5) % 40) + Math.sin(p * 7 + k) * 3, 46 - p * 44); }
       for (let k = 0; k < 10; k++) if (Math.sin(t * 4 + k * 2) > .5) P1(x, (hsh(k * 31) % 150) + 5, 52 + (hsh(k * 17) % 30) - 20, '#f8f070');
       break;
     }
@@ -4070,7 +4078,7 @@ function drawIntermede() {
       // quai
       sR(x, 24, 55, 92, 3, '#8a6a42'); for (let k = 24; k < 116; k += 6) sR(x, k, 55, 1, 3, '#6a4a2a');
       for (const px of [28, 60, 92, 112]) sR(x, px, 58, 2, 8, '#5a3a20');
-      x.drawImage(SPR.didi, 58, 35); x.drawImage(SPR.groloupFace, 74, 35);
+      blit(x, SPR.didi, 58, 35); blit(x, SPR.groloupFace, 74, 35);
       if (I.lines[I.i] && /ricochet|plouf/i.test(I.lines[I.i][1])) { const p = (t * .8) % 1; P1(x, 90 + p * 50, 50 - Math.abs(Math.sin(p * 9)) * 4, '#c8c8d0'); }
       break;
     }
@@ -4085,11 +4093,11 @@ function drawIntermede() {
         const fx = 60 + (hsh(i * 13 + 5) % 40), fy = 10 + (hsh(i * 7 + 1) % 26);
         P1(x, fx, fy + 1, '#5a9a4a'); P1(x, fx, fy, cols[hsh(i * 3) % cols.length]);
       }
-      x.drawImage(SPR.didiWave[((t * 3) | 0) % 2], 36, 36); x.drawImage(SPR.groloupFace, 112, 36);
+      blit(x, SPR.didiWave[((t * 3) | 0) % 2], 36, 36); blit(x, SPR.groloupFace, 112, 36);
       break;
     }
   }
-  g.drawImage(c, 0, 0, 320, 180);
+  blit(g, c, 0, 0, 320, 180);
   rect(0, 0, W, 16, 'rgba(16,8,28,.6)');
   txt(I.titre, 160, 4.5, 6, '#ffd0dc', 'center');
   if (I.t < .5) { g.fillStyle = 'rgba(16,8,28,' + (1 - I.t * 2) + ')'; g.fillRect(0, 0, W, H); }
@@ -4364,7 +4372,7 @@ function render() {
   octx.imageSmoothingEnabled = false;
   // le zoom se fait ici, à la résolution de l'écran: chaque pixel du jeu devient un bloc net de l'écran
   const Z = ZOOM_IMAGE;
-  if (Z) { octx.fillStyle = '#000'; octx.fillRect(0, 0, out.width, out.height); octx.drawImage(buf, Z.sx, Z.sy, W / Z.z, H / Z.z, 0, 0, out.width, out.height); }
+  if (Z) { octx.fillStyle = '#000'; octx.fillRect(0, 0, out.width, out.height); octx.drawImage(buf, Z.sx * K, Z.sy * K, W / Z.z * K, H / Z.z * K, 0, 0, out.width, out.height); }
   else octx.drawImage(buf, 0, 0, out.width, out.height);
   flushSprites();
   if (UI_UTILISE) octx.drawImage(bufUI, 0, 0, out.width, out.height);
@@ -4440,9 +4448,9 @@ function nbBadges() { return BADGES.filter(b => G.badges[b.id]).length; }
 
 function dessinIcone(img, cx, cy, maxW, maxH) {
   if (!img) return;
-  const k = Math.min(1, maxW / img.width, maxH / img.height);
-  const w = Math.max(1, Math.round(img.width * k)), h = Math.max(1, Math.round(img.height * k));
-  g.drawImage(img, Math.round(cx - w / 2), Math.round(cy - h / 2), w, h);
+  const k = Math.min(1, maxW / img.lw, maxH / img.lh);
+  const w = Math.max(1, Math.round(img.lw * k)), h = Math.max(1, Math.round(img.lh * k));
+  blit(g, img, Math.round(cx - w / 2), Math.round(cy - h / 2), w, h);
 }
 function drawToasts(dt) {
   if (!G.toasts || !G.toasts.length) return;
