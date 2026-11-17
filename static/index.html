@@ -1354,7 +1354,7 @@ function buildBackground(pal) {
 }
 
 // ---------------- GÉNÉRATION D'UNE VISITE ----------------
-function buildUp(n, seed, ev, nuit, bon) {
+function buildUp(n, seed, ev, nuit, bon, rang) {
   const p = paramsVisite(n), rng = rngOf(seed), L = p.L, d = Math.min(1, (n - 1) / 6);
   if (nuit) p.poids.oiseau = 0;   // la nuit, on voit mal les oiseaux: il n'y en a pas
   if (ev && ev.poids) for (const k in ev.poids) if (k in p.poids) p.poids[k] *= ev.poids[k];
@@ -1409,6 +1409,17 @@ function buildUp(n, seed, ev, nuit, bon) {
   lev.decor.push({ k: 'maison', x: lev.homeX, style: 'groloup' });
   lev.decor.push({ k: 'maison', x: lev.didiX, style: 'didi' });
   lev.decor.push({ k: 'panneau', x: 150 });
+  // les bâtiments du rang: dans l'ordre tiré pour la partie, répartis le long du trajet, chacun sur le terrain le plus plat des environs
+  { const ids = (rang || RANG.map(b => b.id)).filter(id => RANG.some(b => b.id === id)), nb = ids.length, xa = 430, xb = L - 470;
+    ids.forEach((id, i) => {
+      const b = RANG.find(q => q.id === id), cible = xa + (i + .5) * (xb - xa) / nb; let best = cible, bs = 1e9;
+      for (let xx = cible - 90; xx <= cible + 90; xx += 6) {
+        if (lev.creeks.some(c => xx + b.l > c.x0 - 10 && xx - b.l < c.x1 + 10)) continue;
+        let lo = 1e9, hi = -1e9; for (let k = -b.l; k <= b.l; k += 4) { const v = G(xx + k); if (v < lo) lo = v; if (v > hi) hi = v; }
+        const sc = (hi - lo) + Math.abs(xx - cible) * .04; if (sc < bs) { bs = sc; best = xx; }
+      }
+      lev.decor.push({ k: 'rang', id, x: Math.round(best), l: b.l });
+    }); }
   const isBusy = xx => xx < 300 || xx > L - 330 || busy.some(b => xx > b[0] && xx < b[1]);
 
   // obstacles et ennemis aléatoires
@@ -1442,6 +1453,7 @@ function buildUp(n, seed, ev, nuit, bon) {
     if (isBusy(ex)) continue;
     const k = tirer();
     if (!k) continue;
+    if ((k === 'pommier' || k === 'chien') && lev.decor.some(b => b.k === 'rang' && Math.abs(b.x - ex) < b.l + 44)) continue;   // ni pommier ni grange à chien devant un bâtiment du rang
     nb[k] = (nb[k] || 0) + 1;
     recents.push(k); if (recents.length > 2) recents.shift();
     const y = G(ex);
@@ -1522,6 +1534,7 @@ function buildUp(n, seed, ev, nuit, bon) {
   lev.items.push({ k: 'coeur', x: hx, y: G(hx) - 34 });
   decorate(lev, rng, isBusy);
   lev.parTime = L / 48 + 8;
+  lev.decor = lev.decor.filter(d => d.k !== 'ferme' || !lev.decor.some(b => b.k === 'rang' && Math.abs(b.x - d.x) < b.l + 26));   // pas de grange à chien par-dessus un bâtiment du rang
   lev.nbFleurs = Math.max(1, lev.items.filter(it => it.k === 'fleur').length);
   return lev;
 }
@@ -1531,6 +1544,7 @@ function decorate(lev, rng, isBusy) {
   for (let x = 30; x < L; x += 150) lev.decor.push({ k: 'poteau', x });
   for (let x = 200; x < L - 200; x += 22 + rng() * 60) {
     if (isBusy && isBusy(x) && rng() < .7) continue;
+    if (lev.decor.some(d => d.k === 'rang' && Math.abs(d.x - x) < d.l + 8)) continue;   // pas d'arbre devant un bâtiment du rang
     const r = rng();
     lev.decor.push({ k: r < .5 ? 'epinette' : r < .75 ? 'bouleau' : 'feuillu', x, s: rng() });
   }
@@ -1548,7 +1562,7 @@ function buildDown(up, seed) {
   lev.decor.push({ k: 'maison', x: lev.didiX, style: 'didi' });
   lev.decor.push({ k: 'maison', x: lev.homeX, style: 'groloup' });
   lev.decor.push({ k: 'panneau', x: L - 150 });
-  for (const dc of up.decor) if (dc.k === 'ferme' || dc.k === 'pommier') lev.decor.push({ k: dc.k, x: L - dc.x });
+  for (const dc of up.decor) if (dc.k === 'ferme' || dc.k === 'pommier') lev.decor.push({ k: dc.k, x: L - dc.x }); else if (dc.k === 'rang') lev.decor.push(Object.assign({}, dc, { x: L - dc.x }));
   // que du bon: des coeurs en arcs, des amis qui saluent
   for (let x = 260; x < L - 260; x += 110 + rng() * 90) {
     const r = rng(), cnt = 4 + (rng() * 3 | 0);
@@ -2386,82 +2400,87 @@ function fenetre(x, y, w, h, night, frame) {
   rect(x, y, w, 1, night ? '#fff0a0' : '#c8e4f4');
   rect(x + (w >> 1), y, 1, h, frame || '#f4f4f0');
 }
-// Maison grise du départ (chez Groloup): pignon en façade, galerie à colonnes blanches, garage attaché
+// Maison du départ (chez Groloup), d'après la photo de famille et vue de face: déclin blanc, toit gris, lucarne,
+// galerie à poteaux blancs au pied rouge, porte et volets rouges, pierre au bas du mur; à gauche, la grange aux tracteurs
 function drawMaisonGrise(X, base, night) {
-  const wall = '#767b82', wallD = '#666a70', roof = '#4e4642', roofD = '#3e3632', trim = '#f2f2ee', shut = '#26304a';
-  // garage + abri d'auto (à gauche)
-  for (let r = 0; r < 7; r++) rect(X - 49 + r * 1.6, base - 19 - r, 26 - r * 3.2, 1, r % 2 ? roofD : roof);
-  rect(X - 47, base - 19, 22, 19, '#5c6066');
-  for (let y = base - 17; y < base; y += 3) for (let x = X - 47 + ((y >> 1) % 2) * 2; x < X - 25; x += 4) rect(x, y, 3, 1, '#686c72');
-  rect(X - 44, base - 14, 16, 14, '#efefea');
-  for (let k = 1; k < 4; k++) rect(X - 44, base - 14 + k * 3.5, 16, 1, '#c8c8c4');
-  for (let k = 0; k < 4; k++) rect(X - 42 + k * 4, base - 12, 2, 1, '#6a7280');
-  rect(X - 26, base - 18, 11, 2, roofD); rect(X - 25, base - 16, 9, 16, '#2c2e34');
-  rect(X - 24, base - 8, 3, 8, '#3a6aa8');
-  // maison principale
-  const top = base - 32;
-  rect(X - 17, top, 34, 32, wall);
-  for (let y = top + 2; y < base; y += 3) rect(X - 17, y, 34, 1, wallD);
-  // pignon (toit à deux versants, face à la route)
-  for (let r = 0; r < 19; r++) {
-    const half = 21 - r * 1.12;
-    rect(X - half, top - r, half * 2, 1, (r >> 1) % 2 ? roofD : roof);
-  }
-  for (let r = 2; r < 15; r++) { const half = 16 - r * 1.12; rect(X - half, top - r, half * 2, 1, '#e4e0d4'); }
-  for (let r = 0; r < 17; r++) { const half = 17 - r * 1.12; rect(X - half - 1, top - r, 1, 1, trim); rect(X + half, top - r, 1, 1, trim); }
-  fenetre(X - 2, top - 10, 4, 5, night); rect(X - 5, top - 11, 2, 7, shut); rect(X + 3, top - 11, 2, 7, shut);
-  rect(X - 18, top, 36, 1, trim);
-  rect(X + 5, top - 20, 3, 6, '#8a3a2a'); rect(X + 4, top - 21, 5, 1, '#5a2a1e');
-  // étage
-  fenetre(X - 13, top + 4, 6, 7, night); fenetre(X + 7, top + 4, 6, 7, night);
-  // galerie
-  rect(X - 21, base - 17, 42, 3, roofD); rect(X - 21, base - 14, 42, 1, trim);
-  fenetre(X - 14, base - 12, 7, 7, night); fenetre(X + 7, base - 12, 7, 7, night);
-  rect(X - 2, base - 13, 5, 11, trim); rect(X - 1, base - 12, 3, 4, '#c8dcea'); rect(X + 2, base - 7, 1, 1, '#999');
-  for (const cx of [X - 20, X - 7, X + 5, X + 18]) rect(cx, base - 14, 2, 12, trim);
-  rect(X - 21, base - 3, 42, 2, '#9a9a96'); rect(X - 2, base - 2, 6, 2, '#b0b0aa');
-  // boîtes à fleurs (orange et rouge)
-  for (const fx of [X - 17, X + 6]) {
-    rect(fx, base - 5, 11, 2, '#6a6a68');
-    for (let k = 0; k < 11; k++) rect(fx + k, base - 6 - (k % 2), 1, 1, k % 3 ? '#f0a020' : '#e04a2a');
-  }
+  const wall = '#eef0ea', wallD = '#d6dad0', roof = '#4a4e57', roofD = '#3a3d44', trim = '#ffffff', red = '#d8402c', green = '#3f9a62';
+  // la grange aux tracteurs: blanche, linteau rouge, grande ouverture, un tracteur dans l'ombre
+  murH(X - 72, base - 30, 42, 30, wall, wallD);
+  rect(X - 74, base - 32, 46, 2, '#b9bdc0');
+  rect(X - 66, base - 23, 30, 23, '#22252a'); rect(X - 67, base - 25, 32, 2, red);
+  rect(X - 62, base - 11, 4, 11, '#111214'); rect(X - 44, base - 11, 4, 11, '#111214');
+  rect(X - 55, base - 14, 8, 10, '#8f2f26'); rect(X - 54, base - 12, 6, 5, '#5e211c');
+  rect(X - 56, base - 5, 2, 5, '#111214'); rect(X - 48, base - 5, 2, 5, '#111214');
+  rect(X - 56, base - 15, 1, 1, '#f4e8a0'); rect(X - 47, base - 15, 1, 1, '#f4e8a0'); rect(X - 53, base - 17, 4, 1, '#3a3d42');
+  // la maison: son déclin, la pierre de toutes les couleurs au bas de la façade
+  const top = base - 28;
+  murH(X - 22, top, 44, 28, wall, wallD);
+  const st = ['#b9a98c', '#8f97a3', '#c9b79a', '#7d8894', '#a89a86'];
+  for (let y = base - 8; y < base; y += 3) for (let x = X - 22 + ((y >> 1) % 2) * 2; x < X + 22; x += 4) rect(x, y, Math.min(3, X + 22 - x), 2, st[hsh(x * 7 + y * 13) % st.length]);
+  // le toit (on voit tout le versant), la cheminée, la lucarne à volets rouges
+  versant(X - 24, top + 1, 48, 15, roof, roofD, .15);
+  rect(X - 24, top, 48, 1, trim);
+  rect(X + 7, top - 19, 4, 5, '#e9e6dc'); rect(X + 6, top - 20, 6, 1, '#c8c4b6');
+  rect(X - 7, top - 11, 13, 8, wall); rect(X - 8, top - 12, 15, 1, trim); rect(X - 8, top - 13, 15, 1, roofD);
+  fenetre(X - 3, top - 9, 5, 5, night); rect(X - 6, top - 10, 2, 7, red); rect(X + 3, top - 10, 2, 7, red);
+  // sous la galerie: la porte rouge vitrée entre deux fenêtres à volets rouges
+  fenetre(X - 18, base - 15, 5, 7, night); rect(X - 21, base - 16, 2, 9, red); rect(X - 12, base - 16, 2, 9, red);
+  fenetre(X + 5, base - 15, 5, 7, night); rect(X + 2, base - 16, 2, 9, red); rect(X + 11, base - 16, 2, 9, red);
+  rect(X - 7, base - 16, 6, 13, red); rect(X - 6, base - 15, 4, 5, night ? '#ffd860' : '#c8dcea'); rect(X - 2, base - 9, 1, 1, '#f4e8a0');
+  // la galerie: son petit toit, quatre poteaux blancs au pied rouge, le plancher et les marches verts
+  for (let r = 0; r < 4; r++) rect(X - 25 + r * 1.5, base - 20 - r, 40 - r * 3, 1, r % 2 ? roofD : roof);
+  rect(X - 26, base - 19, 42, 1, trim);
+  for (const px of [X - 24, X - 10, X - 1, X + 13]) { rect(px, base - 18, 2, 15, trim); rect(px, base - 7, 2, 4, red); }
+  rect(X - 26, base - 3, 42, 1, green); rect(X - 26, base - 2, 42, 1, trim); rect(X - 25, base - 1, 40, 1, '#2a2c30');
+  rect(X - 9, base - 2, 9, 1, green); rect(X - 10, base - 1, 11, 1, trim);
   // grand érable à droite
   const pal = G.pal;
-  rect(X + 30, base - 20, 3, 20, '#4a3424');
-  DISC(g, X + 31, base - 30, 15, 12, pal.leafD); DISC(g, X + 29, base - 33, 12, 9, pal.leaf);
-  for (let i = 0; i < 20; i++) rect(X + 18 + (hsh(i * 7 + 3) % 26), base - 40 + (hsh(i * 5) % 18), 1, 1, pal.leafD);
-  // boîte aux lettres
-  rect(X + 14, base - 8, 1, 9, trim); rect(X + 12, base - 11, 6, 3, '#1a1a1a');
+  rect(X + 32, base - 20, 3, 20, '#4a3424');
+  DISC(g, X + 33, base - 30, 13, 12, pal.leafD); DISC(g, X + 31, base - 33, 10, 9, pal.leaf);
+  for (let i = 0; i < 20; i++) rect(X + 22 + (hsh(i * 7 + 3) % 22), base - 40 + (hsh(i * 5) % 18), 1, 1, pal.leafD);
+  // boîte aux lettres sur son poteau
+  rect(X + 26, base - 9, 1, 9, trim); rect(X + 24, base - 12, 5, 3, '#dfe1dc');
 }
-// Maison de Didi: maison carrée crème, toit en pavillon, coins décoratifs, jardin plein de fleurs
+// Maison de Didi, d'après la photo de famille: maison carrée blanche aux coins saumon, toit noir en pavillon, jardin plein de fleurs;
+// à gauche la grange et l'appentis (le chalet de droite, arrivé bien plus tard, n'y est pas)
 function drawMaisonDidi(X, base, night) {
-  const wall = '#f0e4c4', wallD = '#e0d2b0', quoin = '#d4925c', roof = '#8a5636', roofD = '#6e4228';
-  // garage en arrière à gauche
-  for (let r = 0; r < 6; r++) rect(X - 37 + r * 1.5, base - 16 - r, 20 - r * 3, 1, '#7a7a7e');
-  rect(X - 36, base - 16, 18, 16, '#9a7a5a'); rect(X - 33, base - 12, 12, 12, '#7a5a40');
-  // petite maison rouge à droite
-  for (let r = 0; r < 8; r++) rect(X + 30 + r * 1.3, base - 15 - r, 22 - r * 2.6, 1, r % 2 ? '#24242a' : '#30303a');
-  rect(X + 31, base - 15, 20, 15, '#a8302a');
-  for (let x = X + 33; x < X + 51; x += 3) rect(x, base - 15, 1, 15, '#8e2622');
-  rect(X + 34, base - 11, 4, 11, '#f4f4f0'); fenetre(X + 42, base - 11, 5, 5, night);
-  // maison principale
-  const top = base - 32;
-  rect(X - 17, top, 34, 32, wall);
-  for (let y = top + 2; y < base; y += 3) rect(X - 17, y, 34, 1, wallD);
-  for (let y = top; y < base; y += 4) {
-    const w = (y >> 2) % 2 ? 3 : 2;
-    rect(X - 17, y, w, 3, quoin); rect(X + 17 - w, y, w, 3, quoin);
+  const wall = '#f1f1ec', wallD = '#d9dad3', quoin = '#e9b49c', roof = '#2b2a2d', roofD = '#3a393d';
+  // la grange, vue de face: pignon de planches grises sous le toit arrondi de tôle, tuyau de poêle
+  const bx = X - 50;
+  rect(bx + 8, base - 36, 2, 9, '#a9afb3'); rect(bx + 7, base - 37, 4, 1, '#8f969b');
+  for (let r = 0; r < 21; r++) {
+    const half = r < 9 ? 17 - r * .35 : 13.8 - (r - 9) * 1.2; if (half < 1) break;
+    const y = base - 13 - r;
+    rect(bx - half, y, half * 2, 1, '#a9aaa3');
+    for (let x = Math.ceil(bx - half) + 1; x < bx + half - 1; x++) if (((x - bx + 60) % 3) === 0) rect(x, y, 1, 1, '#96978f');
+    rect(bx - half - 1, y, 2, 1, hsh(r * 7) % 4 ? '#c6ccd0' : '#a8623c'); rect(bx + half - 1, y, 2, 1, hsh(r * 11 + 3) % 4 ? '#c6ccd0' : '#a8623c');
   }
-  // toit en pavillon
-  for (let r = 0; r < 11; r++) { const inset = r * 1.6; rect(X - 20 + inset, top - 1 - r, 40 - inset * 2, 1, (r >> 1) % 2 ? roofD : roof); }
-  rect(X - 20, top - 1, 40, 1, roofD);
-  rect(X - 5, top - 10, 10, 7, wall); fenetre(X - 2, top - 9, 4, 4, night); rect(X - 6, top - 11, 12, 1, roofD);
-  rect(X + 7, top - 14, 3, 5, '#c8b898');
-  // fenêtres et porte
-  fenetre(X - 12, top + 4, 6, 7, night); fenetre(X + 6, top + 4, 6, 7, night);
-  fenetre(X - 13, base - 14, 9, 8, night);
-  rect(X + 5, base - 14, 6, 14, '#7a5a3a'); rect(X + 6, base - 13, 4, 4, '#c8dcea'); rect(X + 9, base - 7, 1, 1, '#ffd23a');
-  rect(X + 4, base - 2, 8, 2, '#b0a890');
+  murV(bx - 17, base - 13, 34, 13, '#a9aaa3', '#96978f');
+  rect(bx - 6, base - 12, 12, 12, '#6f6a62'); rect(bx, base - 12, 1, 12, '#4a463f');
+  LN(g, bx - 5, base - 11, bx - 1, base - 1, '#5a564e'); LN(g, bx + 5, base - 11, bx + 1, base - 1, '#5a564e');
+  rect(bx - 2, base - 22, 5, 4, '#2a2c2e'); rect(bx - 14, base - 8, 3, 3, '#3d4a52');
+  // l'appentis de tôle blanche, entre la grange et la maison
+  murV(X - 32, base - 15, 15, 15, '#eceee9', '#d2d5cf');
+  for (let i = 0; i < 15; i++) rect(X - 32 + i, base - 16 - (i >> 2), 1, 1 + (i >> 2), '#dfe2de');
+  // la maison, d'après la photo: grands carreaux blancs, pierres d'angle saumon, toit noir à quatre versants bordé de blanc
+  const top = base - 32, white = '#fbfbf8';
+  rect(X - 17, top, 34, 32, wall);
+  for (let y = top + 3; y < base; y += 4) rect(X - 17, y, 34, 1, wallD);
+  for (let y = top, r = 0; y < base; y += 4, r++) for (let x = X - 17 + (r % 2 ? 4 : 0); x < X + 17; x += 8) rect(x, y, 1, 3, wallD);
+  for (let y = top + 4, r = 0; y < base; y += 4, r++) { const w = r % 2 ? 3 : 5; rect(X - 17, y, w, 3, quoin); rect(X + 17 - w, y, w, 3, quoin); }
+  for (let r = 0; r < 11; r++) { const inset = r * 1.7; rect(X - 20 + inset, top - 2 - r, 40 - inset * 2, 1, (r >> 1) % 2 ? roofD : roof); }
+  rect(X - 21, top - 1, 42, 1, white);
+  rect(X + 5, top - 16, 3, 5, '#d9d2bf'); rect(X + 4, top - 17, 5, 1, '#3a3a3c');
+  // à l'étage: la porte haute et étroite, et une fenêtre
+  rect(X - 5, top + 3, 5, 12, white); rect(X - 4, top + 4, 3, 4, night ? '#ffd860' : '#56646a'); rect(X - 6, top + 2, 7, 1, '#d2d3cc');
+  fenetre(X + 5, top + 4, 5, 6, night);
+  // au rez-de-chaussée: la petite fenêtre sous son auvent, la porte d'entrée sous son petit toit saumon, le perron de bois
+  fenetre(X - 9, base - 12, 5, 6, night);
+  rect(X - 13, base - 16, 13, 1, '#d6d3cb'); rect(X - 12, base - 15, 1, 9, '#55585a'); rect(X - 2, base - 15, 1, 9, '#55585a');
+  rect(X + 6, base - 13, 5, 11, white); rect(X + 7, base - 12, 3, 3, night ? '#ffd860' : '#56646a'); rect(X + 9, base - 7, 1, 1, '#8a8d90');
+  rect(X + 4, base - 15, 9, 1, '#c98f7a'); rect(X + 6, base - 16, 5, 1, '#c98f7a'); rect(X + 8, base - 17, 1, 1, '#c98f7a'); rect(X + 3, base - 14, 11, 1, white);
+  rect(X + 4, base - 13, 1, 11, '#6b4a3a'); rect(X + 12, base - 13, 1, 11, '#6b4a3a');
+  rect(X + 5, base - 2, 7, 1, '#7a5a44'); rect(X + 4, base - 1, 9, 1, '#6b4a3a');
   // lilas et épinettes
   DISC(g, X - 26, base - 10, 7, 8, '#6a8a4a'); DISC(g, X - 27, base - 13, 5, 5, '#d8c8e8');
   for (let i = 0; i < 8; i++) rect(X - 31 + (hsh(i * 3) % 9), base - 17 + (hsh(i * 7) % 8), 1, 1, '#b8a0d8');
@@ -2481,6 +2500,151 @@ function drawBarn(X, base) {
   rect(X - 7, base - 14, 14, 14, '#f0e8e0'); rect(X - 6, base - 13, 12, 12, '#b8382a');
   LN(g, X - 6, base - 13, X + 5, base - 2, '#f0e8e0'); LN(g, X + 5, base - 13, X - 6, base - 2, '#f0e8e0');
   rect(X - 3, top - 7, 6, 5, '#f0e8e0'); rect(X - 2, top - 6, 4, 3, '#3a2a2a');
+}
+
+// ---------------- LES BÂTIMENTS DU RANG ----------------
+// Ce que Groloup croise entre chez lui et chez Didi, d'après les photos de famille, tous vus de face et du même côté.
+// La liste est ouverte: pour ajouter un bâtiment, écrire sa fonction de dessin et ajouter une ligne ici.
+// « l » est sa demi-largeur au sol: on s'en sert pour lui trouver un terrain à peu près plat et pour écarter les arbres.
+// L'ordre est tiré au début d'une partie (tirerRang) et reste le même jusqu'à la fin, à l'aller comme au retour.
+const RANG = [
+  { id: 'ecole', l: 30, dessin: drawEcole },
+  { id: 'verte', l: 34, dessin: drawMaisonVerte },
+  { id: 'bleue', l: 33, dessin: drawMaisonBleue },
+  { id: 'ferme', l: 58, dessin: drawFermeBlanche },
+  { id: 'lucarnes', l: 52, dessin: drawMaisonLucarnes },
+  { id: 'foins', l: 30, dessin: drawFoins, roule: true },   // roule: suit le chemin au lieu d'être posé sur un terre-plein
+];
+function tirerRang() {
+  const ids = RANG.map(b => b.id);
+  for (let i = ids.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; const t = ids[i]; ids[i] = ids[j]; ids[j] = t; }
+  return ids;
+}
+// murs à déclin (lignes couchées) ou en planches (lignes debout); un versant de toit vu de face; un pignon
+function murH(x, y, w, h, c, cD, pas) { rect(x, y, w, h, c); for (let yy = y + 2; yy < y + h; yy += pas || 3) rect(x, yy, w, 1, cD); }
+function murV(x, y, w, h, c, cD, pas) { rect(x, y, w, h, c); for (let xx = x + 2; xx < x + w; xx += pas || 3) rect(xx, y, 1, h, cD); }
+function versant(x, y, w, n, c, cD, fuite) { for (let r = 0; r < n; r++) rect(x + r * (fuite || 0), y - 1 - r, w - 2 * r * (fuite || 0), 1, (r >> 1) % 2 ? cD : c); }
+function pignon(x, y, w, c, cD, bord) {
+  for (let r = 0; r < 40; r++) {
+    const half = w / 2 - r * 1.1; if (half < .5) break;
+    rect(x + w / 2 - half, y - 1 - r, half * 2, 1, r % 3 === 2 ? cD : c);
+    if (bord) { rect(x + w / 2 - half - 1, y - 1 - r, 1, 1, bord); rect(x + w / 2 + half, y - 1 - r, 1, 1, bord); }
+  }
+}
+// L'école de rang: brique, toit à quatre versants, portique à croix, perron blanc, haut solage de béton
+function drawEcole(X, base, night) {
+  const brick = '#b3322c', brickD = '#952822', trim = '#f4f4f0', roof = '#7b746b', roofD = '#6a645c', fl = base - 6;
+  rect(X - 27, fl, 54, 6, '#bdb9ae'); rect(X - 27, fl + 3, 54, 1, '#a5a196'); rect(X - 12, fl + 2, 6, 3, '#4a5560');
+  murH(X - 26, fl - 20, 52, 20, brick, brickD, 2);
+  rect(X - 26, fl - 20, 1, 20, trim); rect(X + 25, fl - 20, 1, 20, trim);
+  for (let r = 0; r < 12; r++) rect(X - 29 + r * 2.2, fl - 21 - r, 58 - r * 3.6, 1, (r >> 1) % 2 ? roofD : roof);
+  rect(X - 29, fl - 21, 58, 1, trim);
+  rect(X + 4, fl - 38, 4, 6, brick); rect(X + 3, fl - 39, 6, 1, brickD); rect(X, fl - 37, 2, 5, '#9aa0a4');
+  for (const fx of [X - 20, X - 6]) { fenetre(fx, fl - 16, 7, 11, night); for (const k of [2, 5, 8]) rect(fx, fl - 16 + k, 7, 1, trim); }
+  // le portique: un pignon de brique bordé de blanc, la porte, la croix
+  murH(X + 9, fl - 22, 14, 22, brick, brickD, 2); pignon(X + 9, fl - 22, 14, brick, brickD, trim);
+  rect(X + 9, fl - 22, 1, 22, trim); rect(X + 22, fl - 22, 1, 22, trim);
+  rect(X + 13, fl - 13, 6, 13, '#f4f2ea'); rect(X + 14, fl - 12, 1, 5, '#d2d0c6'); rect(X + 17, fl - 12, 1, 5, '#d2d0c6'); rect(X + 14, fl - 6, 1, 5, '#d2d0c6'); rect(X + 17, fl - 6, 1, 5, '#d2d0c6');
+  rect(X + 16, fl - 36, 1, 7, trim); rect(X + 15, fl - 34, 3, 1, trim);
+  for (let i = 0; i < 3; i++) { rect(X + 12 - i, fl + i * 2, 8 + i * 2, 1, trim); rect(X + 12 - i, fl + i * 2 + 1, 8 + i * 2, 1, '#3a3a3c'); }
+  rect(X + 11, fl - 5, 1, 5, trim); rect(X + 20, fl - 5, 1, 5, trim);
+}
+// La petite maison blanche du voisin: bardeaux blancs, toit et boiseries verts, longue galerie sur poteaux, l'érable
+function drawMaisonVerte(X, base, night) {
+  const wall = '#eef0e8', wallD = '#d6dace', green = '#4f6e4a', roof = '#8fa594', roofD = '#7d9383';
+  rect(X - 23, base - 2, 46, 2, '#c9c6ba');
+  murH(X - 22, base - 27, 44, 25, wall, wallD, 2);
+  rect(X - 22, base - 27, 1, 25, green); rect(X + 21, base - 27, 1, 25, green);
+  versant(X - 24, base - 27, 48, 12, roof, roofD, .15); rect(X - 24, base - 28, 48, 1, green);
+  rect(X - 12, base - 43, 3, 4, '#b9b4a6');
+  fenetre(X - 15, base - 14, 5, 7, night, green); fenetre(X + 10, base - 14, 5, 7, night, green);
+  rect(X - 3, base - 15, 6, 12, green); rect(X - 2, base - 14, 4, 4, night ? '#ffd860' : '#9cc4dc'); rect(X + 2, base - 8, 1, 1, '#d8d8c8');
+  for (let r = 0; r < 4; r++) rect(X - 26 + r * 1.2, base - 19 - r, 58 - r * 2.4, 1, r % 2 ? roofD : roof);
+  rect(X - 27, base - 18, 60, 1, green);
+  for (const px of [X - 25, X - 8, X + 5, X + 20, X + 31]) rect(px, base - 17, 1, 14, green);
+  rect(X - 26, base - 3, 58, 1, '#9a968a'); rect(X - 25, base - 2, 56, 2, '#3a3a36');
+  rect(X + 26, base - 20, 2, 20, '#4a3424'); DISC(g, X + 27, base - 28, 8, 8, G.pal.leafD); DISC(g, X + 25, base - 30, 6, 6, G.pal.leaf);
+}
+// La maison bleue des soirées de danse: bardeaux bleu foncé, toit gris, lucarne, petite galerie blanche, volets à fronton
+function drawMaisonBleue(X, base, night) {
+  const wall = '#2f4b68', wallD = '#27405a', trim = '#f4f4f0', roof = '#868d8b', roofD = '#757c7a';
+  rect(X - 30, base - 2, 60, 2, '#dcdcd4');
+  murH(X - 29, base - 24, 58, 22, wall, wallD, 2);
+  rect(X - 29, base - 24, 1, 22, trim); rect(X + 28, base - 24, 1, 22, trim);
+  versant(X - 31, base - 24, 62, 14, roof, roofD, .12); rect(X - 31, base - 25, 62, 1, trim);
+  rect(X - 6, base - 43, 4, 5, '#8f4a3a'); rect(X - 7, base - 44, 6, 1, '#6f382c');
+  rect(X + 5, base - 34, 14, 6, wall); rect(X + 4, base - 36, 16, 2, roofD); rect(X + 4, base - 35, 16, 1, trim);
+  fenetre(X + 10, base - 33, 4, 4, night); rect(X + 7, base - 34, 2, 6, trim); rect(X + 15, base - 34, 2, 6, trim);
+  const fen = (fx, w) => { fenetre(fx, base - 16, w, 8, night); rect(fx - 4, base - 17, 2, 10, trim); rect(fx + w + 2, base - 17, 2, 10, trim); rect(fx - 3, base - 19, w + 6, 1, trim); };
+  fen(X - 23, 4); fen(X + 4, 6); fen(X + 19, 5);
+  rect(X - 9, base - 15, 5, 12, trim); rect(X - 8, base - 14, 3, 4, night ? '#ffd860' : '#c8dcea'); rect(X - 5, base - 8, 1, 1, '#999');
+  for (let r = 0; r < 3; r++) rect(X - 16 + r, base - 20 - r, 18 - r * 2, 1, r % 2 ? roofD : roof);
+  rect(X - 16, base - 19, 18, 1, trim); rect(X - 15, base - 18, 1, 15, trim); rect(X, base - 18, 1, 15, trim);
+  rect(X - 14, base - 8, 4, 1, trim); rect(X - 3, base - 8, 3, 1, trim);
+  for (const bx of [X - 14, X - 12, X - 3, X - 1]) rect(bx, base - 7, 1, 4, trim);
+  rect(X - 16, base - 3, 18, 1, '#e9e9e2');
+  DISC(g, X - 13, base - 5, 3, 6, '#2f5a3a'); DISC(g, X - 1, base - 6, 3, 7, '#2f5a3a');
+}
+// La ferme: la remise et la grande grange blanches à toit sombre, l'éolienne derrière, la maison sombre à pignon et sa galerie
+function drawFermeBlanche(X, base, night) {
+  const wall = '#eef0ea', wallD = '#d6dad0', roof = '#3a3b40', roofD = '#2e2f33', trim = '#ffffff', dark = '#5b4638', darkD = '#4d3b2f', fer = '#8f969b';
+  LN(g, X - 14, base - 28, X - 10, base - 50, fer); LN(g, X - 4, base - 28, X - 8, base - 50, fer);
+  for (let y = base - 32; y > base - 48; y -= 5) rect(X - 12, y, 7, 1, fer);
+  CIRC(g, X - 9, base - 54, 5, fer);
+  for (let a = 0; a < 6; a++) LN(g, X - 9, base - 54, X - 9 + Math.round(Math.cos(a * 1.047) * 5), base - 54 + Math.round(Math.sin(a * 1.047) * 5), fer);
+  rect(X - 3, base - 55, 4, 2, fer);
+  murH(X - 56, base - 12, 22, 12, wall, wallD); versant(X - 57, base - 12, 24, 5, roof, roofD, .8); rect(X - 57, base - 13, 24, 1, trim);
+  rect(X - 51, base - 9, 10, 9, '#d9dcd4'); rect(X - 46, base - 9, 1, 9, '#b9bdb4');
+  murH(X - 34, base - 16, 36, 16, wall, wallD); versant(X - 36, base - 16, 40, 12, roof, roofD, .5); rect(X - 36, base - 17, 40, 1, trim);
+  rect(X - 22, base - 12, 12, 12, '#d9dcd4'); rect(X - 16, base - 12, 1, 12, '#b9bdb4');
+  fenetre(X - 30, base - 11, 3, 3, false); fenetre(X - 5, base - 11, 3, 3, false);
+  const hx = X + 24;
+  murH(hx - 9, base - 24, 18, 24, dark, darkD, 2); pignon(hx - 10, base - 24, 20, dark, darkD, trim);
+  rect(hx + 3, base - 36, 2, 5, '#8f4a3a');
+  fenetre(hx - 6, base - 21, 3, 5, night); fenetre(hx + 3, base - 21, 3, 5, night); fenetre(hx - 6, base - 11, 3, 6, night); fenetre(hx + 3, base - 11, 3, 6, night);
+  rect(hx - 1, base - 30, 2, 3, night ? '#ffd860' : '#9cc4dc');
+  rect(hx + 9, base - 13, 12, 2, roof); rect(hx + 9, base - 11, 12, 1, trim); rect(hx + 14, base - 10, 1, 9, trim); rect(hx + 20, base - 10, 1, 9, trim);
+  rect(hx + 9, base - 5, 12, 1, trim); for (let x = hx + 10; x < hx + 20; x += 2) rect(x, base - 4, 1, 3, trim);
+  rect(hx + 9, base - 1, 12, 1, trim);
+}
+// La maison aux deux lucarnes (photo de janvier 1959): toit raide, galerie à garde-corps, grange de planches à gauche,
+// rallonge à droite, grand arbre devant
+function drawMaisonLucarnes(X, base, night) {
+  const wall = '#eceee8', wallD = '#d4d8cf', roof = '#4a4d54', roofD = '#3d4046', trim = '#ffffff', grey = '#a3a49c', greyD = '#8c8d86', pal = G.pal;
+  const bx = X - 38;
+  murV(bx - 12, base - 13, 24, 13, grey, greyD); pignon(bx - 13, base - 13, 26, grey, greyD, '#6d6e68');
+  rect(bx + 2, base - 9, 8, 9, '#6f6a62'); murV(bx + 12, base - 7, 7, 7, grey, greyD); rect(bx + 12, base - 8, 8, 1, '#6d6e68');
+  murV(X - 16, base - 36, 36, 9, wall, wallD, 2); versant(X - 18, base - 36, 40, 5, roof, roofD, .4); rect(X - 18, base - 37, 40, 1, trim);
+  rect(X + 8, base - 46, 3, 5, '#8f4a3a');
+  murH(X - 18, base - 16, 40, 16, wall, wallD); versant(X - 20, base - 16, 44, 12, roof, roofD, .3); rect(X - 20, base - 17, 44, 1, trim);
+  for (const lx of [X - 11, X + 8]) { rect(lx, base - 25, 6, 6, wall); pignon(lx - 1, base - 25, 8, roof, roofD, trim); rect(lx + 2, base - 24, 2, 4, night ? '#ffd860' : '#9cc4dc'); }
+  rect(X - 17, base - 15, 38, 12, '#3a4046');
+  rect(X - 1, base - 14, 5, 11, wall); rect(X, base - 13, 3, 4, night ? '#ffd860' : '#9cc4dc');
+  fenetre(X - 10, base - 13, 4, 6, night); fenetre(X + 10, base - 13, 4, 6, night);
+  for (const px of [X - 18, X - 4, X + 6, X + 20]) rect(px, base - 16, 1, 13, trim);
+  rect(X - 17, base - 7, 13, 1, trim); rect(X + 7, base - 7, 13, 1, trim);
+  for (let x = X - 16; x < X - 4; x += 2) rect(x, base - 6, 1, 3, trim);
+  for (let x = X + 8; x < X + 20; x += 2) rect(x, base - 6, 1, 3, trim);
+  rect(X - 19, base - 3, 42, 1, '#e3e5de'); rect(X - 18, base - 2, 40, 2, '#2f3338'); rect(X - 2, base - 2, 7, 1, '#e3e5de'); rect(X - 3, base - 1, 9, 1, '#f0f1ec');
+  murV(X + 22, base - 10, 12, 10, '#dcded6', '#c1c4bb');
+  for (let i = 0; i < 13; i++) rect(X + 22 + i, base - 15 + Math.round(i * .4), 1, 2, roof);
+  for (let i = 0; i < 12; i++) rect(X + 22 + i, base - 13 + Math.round(i * .4), 1, 3 - Math.round(i * .4) + 1, '#dcded6');
+  rect(X + 27, base - 7, 3, 1, '#9cc4dc'); rect(X + 28, base - 8, 1, 3, '#9cc4dc');
+  rect(X - 26, base - 30, 2, 30, '#5a4632'); rect(X - 26, base - 6, 2, 6, '#e9e6dc');
+  DISC(g, X - 25, base - 38, 10, 9, pal.leafD); DISC(g, X - 28, base - 41, 7, 6, pal.leaf);
+}
+// Les foins: la charrette chargée et son cheval, de profil
+function drawFoins(X, base) {
+  const hay = '#d8b85a', hayD = '#c4a348', wood = '#8a6a44', horse = '#4a3628';
+  DISC(g, X - 10, base - 15, 15, 8, hay); DISC(g, X - 17, base - 12, 9, 5, hay); DISC(g, X - 3, base - 13, 8, 6, hay);
+  for (let i = 0; i < 18; i++) rect(X - 23 + (hsh(i * 7 + 2) % 27), base - 21 + (hsh(i * 13) % 12), 2, 1, hayD);
+  rect(X - 26, base - 8, 30, 2, wood); rect(X - 26, base - 12, 1, 4, wood); rect(X + 3, base - 12, 1, 4, wood);
+  for (const wx of [X - 20, X - 2]) { CIRC(g, wx, base - 4, 4, '#6b5234'); LN(g, wx - 3, base - 4, wx + 3, base - 4, wood); LN(g, wx, base - 7, wx, base - 1, wood); }
+  LN(g, X + 4, base - 7, X + 10, base - 8, wood);
+  rect(X + 9, base - 13, 13, 6, horse); rect(X + 8, base - 12, 1, 7, '#3a2a1f');
+  for (const lx of [X + 10, X + 13, X + 18, X + 20]) rect(lx, base - 7, 2, 7, horse);
+  rect(X + 19, base - 18, 4, 6, horse); rect(X + 21, base - 20, 6, 4, horse); rect(X + 21, base - 21, 1, 1, horse); rect(X + 26, base - 17, 1, 1, horse);
+  rect(X + 18, base - 17, 1, 5, '#3a2a1f'); rect(X + 24, base - 19, 1, 1, '#f4efe0');
 }
 
 // petite police 3x5 en pixels, pour le texte peint sur le décor (il reste derrière les personnages)
@@ -2510,6 +2674,15 @@ function drawDecor(cx, cy) {
       case 'pommier': spr(bg.pommier, X - 12, base - 28); break;
       case 'maison': drawHouse(X, base + 2, d.style, pal.night); break;
       case 'ferme': drawBarn(X, base + 2); break;
+      case 'rang': {   // posé sur un terre-plein: à la hauteur du point le plus haut de son terrain, le creux rempli de terre dessous
+        const b = RANG.find(q => q.id === d.id); if (!b) break;
+        let hi = 1e9, lo = -1e9;
+        for (let k = -d.l; k <= d.l; k += 4) { const v = gyAt(lev, d.x + k); if (v < hi) hi = v; if (v > lo) lo = v; }
+        const by = Math.round((b.roule ? gyAt(lev, d.x) : hi) - cy) + 2;
+        if (!b.roule && lo - hi > 2) { rect(X - d.l, by - 1, d.l * 2, Math.round(lo - hi) + 3, pal.dirt); rect(X - d.l, by - 1, d.l * 2, 1, pal.grass); }
+        b.dessin(X, by, pal.night);
+        break;
+      }
       case 'panneau':
         rect(X, base - 22, 2, 22, '#5a3a22'); rect(X - 14, base - 30, 30, 10, '#1f7a3a'); rect(X - 13, base - 29, 28, 8, '#2a9a4a');
         pixTxt('RANG 14', X - 12, base - 27, '#ffffff'); break;
@@ -3030,7 +3203,8 @@ function startVisit() {
   G.event = G.visite === 1 ? piocher('evenements', EVENEMENTS, e => e.id === 'calme') : piocher('evenements', EVENEMENTS, e => !e.saisons || e.saisons.includes(G.saison));
   // un joueur qui va bien (amour en avance) voit les événements rares: arbres qui tombent, plus d'éclairs
   G.bon = G.visite >= 3 && G.amour >= (G.visite - 1) * 15;
-  G.up = buildUp(G.visite, G.seed, G.event, G.saison === 'nuit', G.bon);
+  if (G.partie && !G.partie.rang) G.partie.rang = tirerRang();   // l'ordre des bâtiments du rang: tiré une fois, gardé toute la partie
+  G.up = buildUp(G.visite, G.seed, G.event, G.saison === 'nuit', G.bon, G.partie && G.partie.rang);
   setLevel(G.up);
   G.fauxDepart = false; G.banniere = null; G.foudre = null;
   planifierDefi();
@@ -3282,7 +3456,7 @@ function updateTitle(dt) {
       if (!G.partie.defis) { G.partie.defis = planDefis(G.visite); if (G.partie.crevFaite) G.partie.defis.crev = -1; }
       G.oui = false; suivi('reprise', G.visite, { amour: Math.floor(G.amour) }); startVisit();
     } else {
-      G.visite = 1; G.amour = 0; G.totalFleurs = 0; chargerPaquets(); G.pet = 0; G.oui = false; G.vus = {}; G.partie = { plantes: 0, temps: 0, par: 0, coeurs: 0, ours: 0, sansFaute: 0, wheelie: 0, defis: planDefis(2), policeVisite: planPolice(1), policeVue: false };
+      G.visite = 1; G.amour = 0; G.totalFleurs = 0; chargerPaquets(); G.pet = 0; G.oui = false; G.vus = {}; G.partie = { plantes: 0, temps: 0, par: 0, coeurs: 0, ours: 0, sansFaute: 0, wheelie: 0, defis: planDefis(2), policeVisite: planPolice(1), policeVue: false, rang: tirerRang() };
       suivi('nouvelle', 1);
       startVisit();   // les instructions restent dans « Comment jouer » au menu
     }
