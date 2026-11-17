@@ -2435,23 +2435,23 @@ function drawMaisonGrise(X, base, night) {
   rect(X + 26, base - 9, 1, 9, trim); rect(X + 24, base - 12, 5, 3, '#dfe1dc');
 }
 // Maison de Didi, d'après la photo de famille: maison carrée blanche aux coins saumon, toit noir en pavillon, jardin plein de fleurs;
-// à gauche la grange et l'appentis (le chalet de droite, arrivé bien plus tard, n'y est pas)
+// à gauche la grange de bois brun et l'appentis (le chalet de droite, arrivé bien plus tard, n'y est pas)
 function drawMaisonDidi(X, base, night) {
   const wall = '#f1f1ec', wallD = '#d9dad3', quoin = '#e9b49c', roof = '#2b2a2d', roofD = '#3a393d';
-  // la grange, vue de face: pignon de planches grises sous le toit arrondi de tôle, tuyau de poêle
-  const bx = X - 57;
-  rect(bx + 8, base - 36, 2, 9, '#a9afb3'); rect(bx + 7, base - 37, 4, 1, '#8f969b');
-  for (let r = 0; r < 21; r++) {
-    const half = r < 9 ? 17 - r * .35 : 13.8 - (r - 9) * 1.2; if (half < 1) break;
-    const y = base - 13 - r;
-    rect(bx - half, y, half * 2, 1, '#a9aaa3');
-    for (let x = Math.ceil(bx - half) + 1; x < bx + half - 1; x++) if (((x - bx + 60) % 3) === 0) rect(x, y, 1, 1, '#96978f');
-    rect(bx - half - 1, y, 2, 1, hsh(r * 7) % 4 ? '#c6ccd0' : '#a8623c'); rect(bx + half - 1, y, 2, 1, hsh(r * 11 + 3) % 4 ? '#c6ccd0' : '#a8623c');
+  // la grange, comme sur la photo de 2013: un long mur de bois brun percé de petites fenêtres et d'une grande porte,
+  // un pignon bas de planches grisées sous le toit de tôle, le tuyau de poêle
+  const bx = X - 59, tin = '#c6ccd0';
+  rect(bx - 13, base - 27, 2, 9, '#a9afb3'); rect(bx - 14, base - 28, 4, 1, '#8f969b');
+  for (let r = 0; r < 8; r++) {
+    const half = 19 - r * 2.4, y = base - 13 - r; if (half < 1) break;
+    rect(bx - half, y, half * 2, 1, r % 3 === 2 ? '#7d8376' : '#8b9085');
+    rect(bx - half - 2, y, 3, 1, hsh(r * 7 + 1) % 4 ? tin : '#a8623c'); rect(bx + half - 1, y, 3, 1, hsh(r * 11 + 3) % 4 ? tin : '#a8623c');
   }
-  murV(bx - 17, base - 13, 34, 13, '#a9aaa3', '#96978f');
-  rect(bx - 6, base - 12, 12, 12, '#6f6a62'); rect(bx, base - 12, 1, 12, '#4a463f');
-  LN(g, bx - 5, base - 11, bx - 1, base - 1, '#5a564e'); LN(g, bx + 5, base - 11, bx + 1, base - 1, '#5a564e');
-  rect(bx - 2, base - 22, 5, 4, '#2a2c2e'); rect(bx - 14, base - 8, 3, 3, '#3d4a52');
+  rect(bx - 2, base - 21, 4, 1, tin);
+  murV(bx - 19, base - 12, 38, 12, '#8a5a3a', '#74482c');
+  rect(bx - 21, base - 13, 42, 1, tin);
+  for (const wx of [bx - 16, bx - 10, bx - 4]) { rect(wx - 1, base - 10, 4, 4, '#e0d8c8'); rect(wx, base - 9, 2, 2, night ? '#ffd860' : '#2a2c2e'); }
+  rect(bx + 3, base - 10, 13, 10, '#a8643c'); rect(bx + 3, base - 7, 13, 1, '#8a4e2c'); rect(bx + 3, base - 4, 13, 1, '#8a4e2c'); rect(bx + 2, base - 11, 15, 1, '#6a4028');
   // la corde à linge, entre la grange et l'appentis
   rect(X - 40, base - 12, 8, 1, '#d8d0c0');
   rect(X - 39, base - 11, 2, 3, '#f4f4f0'); rect(X - 36, base - 11, 2, 4, '#7aa0d8'); rect(X - 34, base - 11, 1, 3, '#e8a0b0');
