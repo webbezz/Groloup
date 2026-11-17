@@ -2439,7 +2439,7 @@ function drawMaisonGrise(X, base, night) {
 function drawMaisonDidi(X, base, night) {
   const wall = '#f1f1ec', wallD = '#d9dad3', quoin = '#e9b49c', roof = '#2b2a2d', roofD = '#3a393d';
   // la grange, vue de face: pignon de planches grises sous le toit arrondi de tôle, tuyau de poêle
-  const bx = X - 50;
+  const bx = X - 57;
   rect(bx + 8, base - 36, 2, 9, '#a9afb3'); rect(bx + 7, base - 37, 4, 1, '#8f969b');
   for (let r = 0; r < 21; r++) {
     const half = r < 9 ? 17 - r * .35 : 13.8 - (r - 9) * 1.2; if (half < 1) break;
@@ -2452,6 +2452,9 @@ function drawMaisonDidi(X, base, night) {
   rect(bx - 6, base - 12, 12, 12, '#6f6a62'); rect(bx, base - 12, 1, 12, '#4a463f');
   LN(g, bx - 5, base - 11, bx - 1, base - 1, '#5a564e'); LN(g, bx + 5, base - 11, bx + 1, base - 1, '#5a564e');
   rect(bx - 2, base - 22, 5, 4, '#2a2c2e'); rect(bx - 14, base - 8, 3, 3, '#3d4a52');
+  // la corde à linge, entre la grange et l'appentis
+  rect(X - 40, base - 12, 8, 1, '#d8d0c0');
+  rect(X - 39, base - 11, 2, 3, '#f4f4f0'); rect(X - 36, base - 11, 2, 4, '#7aa0d8'); rect(X - 34, base - 11, 1, 3, '#e8a0b0');
   // l'appentis de tôle blanche, entre la grange et la maison
   murV(X - 32, base - 15, 15, 15, '#eceee9', '#d2d5cf');
   for (let i = 0; i < 15; i++) rect(X - 32 + i, base - 16 - (i >> 2), 1, 1 + (i >> 2), '#dfe2de');
@@ -2478,6 +2481,10 @@ function drawMaisonDidi(X, base, night) {
   DISC(g, X - 26, base - 10, 7, 8, '#6a8a4a'); DISC(g, X - 27, base - 13, 5, 5, '#d8c8e8');
   for (let i = 0; i < 8; i++) rect(X - 31 + (hsh(i * 3) % 9), base - 17 + (hsh(i * 7) % 8), 1, 1, '#b8a0d8');
   for (let k = 0; k < 16; k++) { const w = Math.floor(k / 2.4); rect(X + 22 - w, base - 18 + k, w * 2 + 1, 1, k % 5 > 3 ? G.pal.treeD : G.pal.tree); }
+  // la barrière du jardin et le gros massif de fleurs blanches, à droite
+  DISC(g, X + 33, base - 4, 4, 4, '#3a7a2a');
+  for (let i = 0; i < 14; i++) rect(X + 30 + (hsh(i * 11 + 5) % 8), base - 8 + (hsh(i * 7 + 1) % 6), 1, 1, '#ffffff');
+  rect(X + 39, base - 7, 1, 7, '#6a6a68'); rect(X + 46, base - 7, 1, 7, '#6a6a68'); rect(X + 39, base - 6, 8, 1, '#8a8a88'); rect(X + 39, base - 3, 8, 1, '#8a8a88');
   // jardin de fleurs
   const cols = ['#ff6a9a', '#b47aff', '#e83a3a', '#ffd23a', '#ffffff', '#ff9a3a'];
   for (let i = 0; i < 46; i++) {
