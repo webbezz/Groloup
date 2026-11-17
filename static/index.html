@@ -806,13 +806,14 @@ function mkCanvas(w, h) {
 function blit(x, img, dx, dy, dw, dh) { x.drawImage(img, dx, dy, dw === undefined ? img.lw : dw, dh === undefined ? img.lh : dh); }
 // Arrondi au point d'image le plus proche (le demi-point, quand K vaut 2)
 function fi(v) { return Math.round(v * K) / K; }
-function P1(x, X, Y, col) { x.fillStyle = col; x.fillRect(Math.round(X), Math.round(Y), 1, 1); }
+function P1(x, X, Y, col) { x.fillStyle = col; x.fillRect(fi(X), fi(Y), 1, 1); }
 function LN(x, x0, y0, x1, y1, col) {
-  x0 = Math.round(x0); y0 = Math.round(y0); x1 = Math.round(x1); y1 = Math.round(y1);
+  // le trait garde son épaisseur d'un point, mais il avance au demi-point: l'escalier des obliques est deux fois plus fin
+  x0 = Math.round(x0 * K); y0 = Math.round(y0 * K); x1 = Math.round(x1 * K); y1 = Math.round(y1 * K);
   const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
   let e = dx + dy; x.fillStyle = col;
-  for (let n = 0; n < 200; n++) {
-    x.fillRect(x0, y0, 1, 1);
+  for (let n = 0; n < 200 * K; n++) {
+    x.fillRect(x0 / K, y0 / K, 1, 1);
     if (x0 === x1 && y0 === y1) break;
     const e2 = 2 * e;
     if (e2 >= dy) { e += dy; x0 += sx; }
@@ -822,32 +823,53 @@ function LN(x, x0, y0, x1, y1, col) {
 function LN2(x, x0, y0, x1, y1, col) { LN(x, x0, y0, x1, y1, col); LN(x, x0 + 1, y0, x1 + 1, y1, col); }
 function CIRC(x, cx, cy, r, col) {
   x.fillStyle = col;
-  for (let a = 0; a < 64; a++) {
-    const t = a / 64 * Math.PI * 2;
-    x.fillRect(Math.round(cx + Math.cos(t) * r), Math.round(cy + Math.sin(t) * r), 1, 1);
+  const vus = new Set();   // chaque point une seule fois: une couleur transparente ne s'empile pas
+  for (let a = 0; a < 64 * K; a++) {
+    const t = a / (64 * K) * Math.PI * 2, o = .5 - .5 / K;   // même centre qu'avant: le milieu du point (cx, cy)
+    for (const rr of r > 2 ? [r, r - 1 / K] : [r]) {
+      const px = fi(cx + o + Math.cos(t) * rr), py = fi(cy + o + Math.sin(t) * rr), cle = px * 4096 + py;
+      if (!vus.has(cle)) { vus.add(cle); x.fillRect(px, py, 1 / K, 1 / K); }
+    }
   }
 }
 function DISC(x, cx, cy, rx, ry, col) {
   x.fillStyle = col;
-  for (let y = -ry; y <= ry; y++) {
-    const w = Math.round(rx * Math.sqrt(Math.max(0, 1 - (y * y) / (ry * ry))));
-    x.fillRect(Math.round(cx - w), Math.round(cy + y), w * 2 + 1, 1);
+  // une vraie ellipse, tranche fine par tranche fine: même encombrement qu'avant (2rx+1 sur 2ry+1), mais ronde
+  const u = 1 / K, X = fi(cx) + .5, Y = fi(cy) + .5, a = rx + .5, b = ry + .5;
+  for (let y = -b + u / 2; y < b; y += u) {
+    const w = fi(a * Math.sqrt(Math.max(0, 1 - (y * y) / (b * b))));
+    if (w > 0) x.fillRect(X - w, Y + y - u / 2, w * 2, u);
   }
 }
 function rect2(x, X, Y, w, h, col) { x.fillStyle = col; x.fillRect(X, Y, w, h); }
 function ascii(rows, pal, flip) {
   const w = Math.max(...rows.map(r => r.length)), h = rows.length;
   const [c, x] = mkCanvas(w, h);
-  rows.forEach((r, y) => {
-    for (let i = 0; i < r.length; i++) {
-      const col = pal[r[i]];
-      if (col) P1(x, flip ? w - 1 - i : i, y, col);
-    }
-  });
+  lettres(x, rows, pal, 0, 0, flip ? w : 0);
   return c;
 }
-function stamp(x, rows, pal, ox, oy) {
-  rows.forEach((r, y) => { for (let i = 0; i < r.length; i++) { const col = pal[r[i]]; if (col) P1(x, ox + i, oy + y, col); } });
+function stamp(x, rows, pal, ox, oy) { lettres(x, rows, pal, ox, oy, 0); }
+// Pose un dessin en lettres. Chaque lettre vaut un point du jeu, coupé en quatre: quand deux voisins de même couleur se
+// touchent par le coin, le coin prend leur couleur (règle « Scale2x »). Les obliques et les rondeurs deviennent deux fois
+// plus fines, les traits droits et les points isolés ne changent pas. « miroir »: largeur du dessin s'il faut le retourner.
+function lettres(x, rows, pal, ox, oy, miroir) {
+  const h = rows.length, u = 1 / K;
+  const at = (i, j) => (j < 0 || j >= h || i < 0 || i >= rows[j].length) ? null : (pal[rows[j][i]] || null);
+  ox = Math.round(ox); oy = Math.round(oy);
+  for (let j = 0; j < h; j++) for (let i = 0; i < rows[j].length; i++) {
+    const P = at(i, j), A = at(i, j - 1), B = at(i + 1, j), C = at(i - 1, j), D = at(i, j + 1);
+    let q = [P, P, P, P];
+    if (K === 2) {
+      if (C === A && C !== D && A !== B) q[0] = A;
+      if (A === B && A !== C && B !== D) q[1] = B;
+      if (D === C && D !== B && C !== A) q[2] = C;
+      if (B === D && B !== A && D !== C) q[3] = D;
+    }
+    if (miroir) q = [q[1], q[0], q[3], q[2]];
+    const X = ox + (miroir ? miroir - 1 - i : i), Y = oy + j;
+    if (q[0] === P && q[1] === P && q[2] === P && q[3] === P) { if (P) { x.fillStyle = P; x.fillRect(X, Y, 1, 1); } continue; }
+    for (let k = 0; k < 4; k++) if (q[k]) { x.fillStyle = q[k]; x.fillRect(X + (k & 1) * u, Y + (k >> 1) * u, u, u); }
+  }
 }
 function ik(ax, ay, bx, by, l1, l2, pickFn) {
   let dx = bx - ax, dy = by - ay, d = Math.hypot(dx, dy);
@@ -1284,44 +1306,45 @@ function buildBackground(pal) {
       x.fillStyle = pal.sky[i]; x.fillRect(0, i * bh, W, bh);
       if (i < n - 1) { // tramage entre les bandes
         x.fillStyle = pal.sky[i + 1];
-        for (let px = 0; px < W; px += 2) { x.fillRect(px + (i & 1), i * bh + bh - 2, 1, 1); x.fillRect(px + 1 - (i & 1), i * bh + bh - 1, 1, 1); }
+        const u = 1 / K;   // tramage au point fin: de loin, la bande se fond dans la suivante
+        for (let ry = 0; ry < 2 * K; ry++) for (let px = (ry + i) % 2 * u; px < W; px += (ry < K ? 4 : 2) * u) x.fillRect(px, i * bh + bh - 2 + ry * u, u, u);
       }
     }
     if (pal.night) {
       const r = rngOf(7);
-      for (let i = 0; i < 90; i++) { x.fillStyle = r() < .2 ? '#ffffff' : '#9aa6d8'; x.fillRect((r() * W) | 0, (r() * 110) | 0, 1, 1); }
+      for (let i = 0; i < 90; i++) {
+        const gros = r() < .2, sx = fi(r() * W), sy = fi(r() * 110), u = 1 / K;
+        x.fillStyle = gros ? '#ffffff' : '#9aa6d8'; x.fillRect(sx, sy, u, u);
+        if (gros) { x.fillStyle = '#c8d0f0'; x.fillRect(sx - u, sy, 3 * u, u); x.fillRect(sx, sy - u, u, 3 * u); x.fillStyle = '#ffffff'; x.fillRect(sx, sy, u, u); }
+      }
     }
     bg.sky = c;
   }
   // montagnes (Appalaches) — tuile de 640
   {
     const [c, x] = mkCanvas(640, 110);
-    for (let i = 0; i < 640; i++) {
+    for (let i = 0; i < 640; i += 1 / K) {
       const t = i / 640 * Math.PI * 2;
       const h = 46 + 14 * Math.sin(t + 1) + 9 * Math.sin(t * 3 + .5) + 4 * Math.sin(t * 7 + 2) + 2 * Math.sin(t * 13);
-      const top = Math.round(110 - h);
-      x.fillStyle = pal.mtn; x.fillRect(i, top, 1, 110 - top);
-      x.fillStyle = pal.mtnL; x.fillRect(i, top, 1, 2);
+      const top = fi(110 - h);
+      x.fillStyle = pal.mtn; x.fillRect(i, top, 1 / K, 110 - top);
+      x.fillStyle = pal.mtnL; x.fillRect(i, top, 1 / K, 1.5);
     }
     bg.mtn = c;
   }
   // collines boisées avec épinettes
   {
     const [c, x] = mkCanvas(640, 90);
-    const tops = [];
-    for (let i = 0; i < 640; i++) {
-      const t = i / 640 * Math.PI * 2;
-      const h = 40 + 8 * Math.sin(t * 2 + 3) + 5 * Math.sin(t * 5 + 1);
-      tops[i] = Math.round(90 - h);
-      x.fillStyle = pal.hill; x.fillRect(i, tops[i], 1, 90 - tops[i]);
-    }
+    const haut = i => { const t = i / 640 * Math.PI * 2; return fi(90 - (40 + 8 * Math.sin(t * 2 + 3) + 5 * Math.sin(t * 5 + 1))); };
+    for (let i = 0; i < 640; i += 1 / K) { const top = haut(i); x.fillStyle = pal.hill; x.fillRect(i, top, 1 / K, 90 - top); }
     for (let i = 0; i < 640; i += 5) {
       const hh = 7 + (hsh(i * 7) % 9), bx = i + (hsh(i) % 3);
-      const base = tops[bx % 640] + 3;
-      for (let k = 0; k < hh; k++) {
-        const w = Math.max(0, Math.floor((k + 1) / 2.2));
-        x.fillStyle = (k % 3 === 0) ? pal.hillD : pal.tree;
-        x.fillRect(((bx - w) % 640 + 640) % 640, base - hh + k, w * 2 + 1, 1);
+      const base = haut(bx % 640) + 3;
+      // une épinette: des étages de branches qui s'élargissent vers le bas, tranche fine par tranche fine
+      for (let k = 0; k < hh; k += 1 / K) {
+        const w = Math.floor(((k % 3) * .55 + (k + 1) / 2.6) * K) / K;
+        x.fillStyle = (k % 3 >= 2.5 || k % 3 < .5) ? pal.hillD : pal.tree;
+        x.fillRect(((bx - w) % 640 + 640) % 640, base - hh + k, w * 2 + 1 / K, 1 / K);
       }
     }
     bg.hill = c;
@@ -1330,10 +1353,10 @@ function buildBackground(pal) {
   bg.epinette = (() => {
     const [c, x] = mkCanvas(13, 30);
     x.fillStyle = '#4a3020'; x.fillRect(6, 24, 2, 6);
-    for (let k = 0; k < 26; k++) {
-      const w = Math.floor(((k % 8) + k / 2.2) / 2.2);
-      x.fillStyle = (k % 8 > 5) ? pal.treeD : pal.tree;
-      x.fillRect(6 - w, k, w * 2 + 1, 1);
+    for (let k = 0; k < 26; k += 1 / K) {
+      const w = Math.floor(((k % 8) + k / 2.2) / 2.2 * K) / K;
+      x.fillStyle = (k % 8 > 5.5) ? pal.treeD : pal.tree;
+      x.fillRect(6.5 - w - .5 / K, k, w * 2 + 1 / K, 1 / K);
     }
     return c;
   })();
@@ -2368,11 +2391,11 @@ function wrap(s, size, maxW) {
   return lines;
 }
 function spr(img, x, y, flip) {
-  x = Math.round(x); y = Math.round(y);
+  x = fi(x); y = fi(y);
   if (!flip) { blit(g, img, x, y); return; }
   g.save(); g.translate(x + img.lw, y); g.scale(-1, 1); blit(g, img, 0, 0); g.restore();
 }
-function rect(x, y, w, h, col) { g.fillStyle = col; g.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); }
+function rect(x, y, w, h, col) { g.fillStyle = col; g.fillRect(fi(x), fi(y), fi(w), fi(h)); }
 
 function drawSky(cx, cy) {
   const pal = G.pal, bg = G.bg, rise = clamp((G.camYBottom || 0) - cy, 0, 900);
@@ -2387,11 +2410,11 @@ function drawSky(cx, cy) {
     const x = (((i * 170 - cx * .06 - G.t * 3) % 680) + 680) % 680 - 60, y = 16 + i * 11 + (i % 2) * 6;
     DISC(g, x, y + 2, 16, 4, pal.cloudD); DISC(g, x - 6, y, 9, 5, pal.cloud); DISC(g, x + 6, y - 1, 10, 6, pal.cloud);
   }
-  const my = Math.round(4 + rise * .04), mx = -(((cx * .1) % 640) + 640) % 640;
-  blit(g, bg.mtn, Math.round(mx), my); blit(g, bg.mtn, Math.round(mx) + 640, my);
+  const my = fi(4 + rise * .04), mx = -(((cx * .1) % 640) + 640) % 640;
+  blit(g, bg.mtn, fi(mx), my); blit(g, bg.mtn, fi(mx) + 640, my);
   rect(0, my + 109, W, H, pal.mtn);
-  const hy = Math.round(42 + rise * .07), hx = -(((cx * .3) % 640) + 640) % 640;
-  blit(g, bg.hill, Math.round(hx), hy); blit(g, bg.hill, Math.round(hx) + 640, hy);
+  const hy = fi(42 + rise * .07), hx = -(((cx * .3) % 640) + 640) % 640;
+  blit(g, bg.hill, fi(hx), hy); blit(g, bg.hill, fi(hx) + 640, hy);
   rect(0, hy + 89, W, H, pal.hill);
 }
 
@@ -2401,8 +2424,10 @@ function drawHouse(X, base, style, night) {
 function fenetre(x, y, w, h, night, frame) {
   rect(x - 1, y - 1, w + 2, h + 2, frame || '#f4f4f0');
   rect(x, y, w, h, night ? '#ffd860' : '#9cc4dc');
-  rect(x, y, w, 1, night ? '#fff0a0' : '#c8e4f4');
-  rect(x + (w >> 1), y, 1, h, frame || '#f4f4f0');
+  rect(x, y, w, 1 / K, night ? '#fff0a0' : '#c8e4f4');
+  if (!night && w >= 4 && h >= 4) { rect(x + .5, y + 1, .5, h - 2, '#b4d6ea'); rect(x + w - 1, y + h - 1.5, .5, 1, '#86b2cc'); }   // un reflet, une ombre
+  rect(x + w / 2 - .25, y, .5, h, frame || '#f4f4f0');
+  if (h >= 6) rect(x, y + fi(h / 2) - .25, w, .5, frame || '#f4f4f0');
 }
 // Maison du départ (chez Groloup), d'après la photo de famille et vue de face: déclin blanc, toit gris, lucarne,
 // galerie à poteaux blancs au pied rouge, porte et volets rouges, pierre au bas du mur; à gauche, la grange aux tracteurs
@@ -2533,14 +2558,14 @@ function tirerRang() {
   return ids;
 }
 // murs à déclin (lignes couchées) ou en planches (lignes debout); un versant de toit vu de face; un pignon
-function murH(x, y, w, h, c, cD, pas) { rect(x, y, w, h, c); for (let yy = y + 2; yy < y + h; yy += pas || 3) rect(x, yy, w, 1, cD); }
-function murV(x, y, w, h, c, cD, pas) { rect(x, y, w, h, c); for (let xx = x + 2; xx < x + w; xx += pas || 3) rect(xx, y, 1, h, cD); }
-function versant(x, y, w, n, c, cD, fuite) { for (let r = 0; r < n; r++) rect(x + r * (fuite || 0), y - 1 - r, w - 2 * r * (fuite || 0), 1, (r >> 1) % 2 ? cD : c); }
+function murH(x, y, w, h, c, cD, pas) { rect(x, y, w, h, c); for (let yy = y + 1; yy < y + h; yy += (pas || 3) / 2) rect(x, yy, w, 1 / K, cD); }
+function murV(x, y, w, h, c, cD, pas) { rect(x, y, w, h, c); for (let xx = x + 1; xx < x + w; xx += (pas || 3) / 2) rect(xx, y, 1 / K, h, cD); }
+function versant(x, y, w, n, c, cD, fuite) { for (let r = 0; r < n; r += 1 / K) rect(x + r * (fuite || 0), y - 1 / K - r, w - 2 * r * (fuite || 0), 1 / K, r % 2 >= 1.5 ? cD : c); }
 function pignon(x, y, w, c, cD, bord) {
-  for (let r = 0; r < 40; r++) {
+  for (let r = 0; r < 40; r += 1 / K) {
     const half = w / 2 - r * 1.1; if (half < .5) break;
-    rect(x + w / 2 - half, y - 1 - r, half * 2, 1, r % 3 === 2 ? cD : c);
-    if (bord) { rect(x + w / 2 - half - 1, y - 1 - r, 1, 1, bord); rect(x + w / 2 + half, y - 1 - r, 1, 1, bord); }
+    rect(x + w / 2 - half, y - 1 / K - r, half * 2, 1 / K, r % 1.5 >= 1 ? cD : c);
+    if (bord) { rect(x + w / 2 - half - 1, y - 1 / K - r, 1, 1 / K, bord); rect(x + w / 2 + half, y - 1 / K - r, 1, 1 / K, bord); }
   }
 }
 // L'école de rang: brique, toit à quatre versants, portique à croix, perron blanc, haut solage de béton
@@ -2727,40 +2752,43 @@ function drawDecor(cx, cy) {
 }
 
 function drawGround(cx, cy) {
-  const lev = G.lev, pal = G.pal;
-  let ci = 0;
-  for (let sx = 0; sx < W; sx++) {
-    const wx = sx + cx, i = clamp(wx, 0, lev.L);
-    const gyS = Math.round(lev.gy[i]) - cy;
+  const lev = G.lev, pal = G.pal, u = 1 / K;
+  const R = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+  // colonne fine par colonne fine: la pente monte par demi-points. Le sol n'est jamais plus bas que là où les
+  // bâtiments et les personnages sont posés (round(gy)): rien ne flotte, au pire ça s'enfonce d'un point fin.
+  for (let n = 0; n < W * K; n++) {
+    const sx = n * u, wx = sx + cx, i0 = clamp(Math.floor(wx), 0, lev.L), i1 = Math.min(lev.L, i0 + 1);
+    const gyS = Math.floor((lev.gy[i0] + (lev.gy[i1] - lev.gy[i0]) * clamp(wx - i0, 0, 1)) * K) / K - cy;
     let c = null;
     for (const k of lev.creeks) if (wx >= k.x0 && wx < k.x1) { c = k; break; }
     if (!c) {
-      rect(sx, gyS + 5, 1, H, pal.dirt);
-      rect(sx, gyS + 5, 1, 2, pal.dirtD);
-      rect(sx, gyS + 34, 1, H, pal.dirtD);
-      const h = hsh(wx);
-      if (h % 7 === 0) rect(sx, gyS + 10 + (h >> 8) % 20, 1, 1, pal.dirtDD);
-      if (h % 11 === 0) rect(sx, gyS + 38 + (h >> 9) % 30, 1, 1, pal.dirtDD);
-      rect(sx, gyS, 1, 1, pal.roadL);
-      rect(sx, gyS + 1, 1, 4, pal.road);
-      if (h % 5 === 0) rect(sx, gyS + 1 + (h >> 4) % 4, 1, 1, pal.roadD);
-      if (h % 13 === 0) rect(sx, gyS - 1, 1, 1, pal.grass);
+      R(sx, gyS + 5, u, H, pal.dirt);
+      R(sx, gyS + 5, u, 2, pal.dirtD);
+      R(sx, gyS + 34, u, H, pal.dirtD);
+      const h = hsh(Math.round(wx * K) + 7919 * (n & 1));
+      if (h % 7 === 0) R(sx, gyS + 10 + ((h >> 8) % 40) * u, u, u, pal.dirtDD);
+      if (h % 9 === 4) R(sx, gyS + 9 + ((h >> 6) % 44) * u, u, 1, pal.dirtD);
+      if (h % 11 === 0) R(sx, gyS + 38 + ((h >> 9) % 60) * u, u, u, pal.dirtDD);
+      R(sx, gyS, u, 1, pal.roadL);
+      R(sx, gyS + 1, u, 4, pal.road);
+      if (h % 5 === 0) R(sx, gyS + 1 + ((h >> 4) % 8) * u, u, u, pal.roadD);
+      if (h % 6 === 1) R(sx, gyS + 1 + ((h >> 5) % 7) * u, u, u, pal.roadL);
+      if (h % 13 === 0) R(sx, gyS - ((h >> 3) & 1 ? 1 : u), u, 1, pal.grass);
     } else {
-      const u = wx - c.x0, len = c.x1 - c.x0;
-      const bank = Math.round(Math.min(26, u * .9, (len - u) * .9));
-      rect(sx, gyS + bank, 1, H, pal.dirt);
-      rect(sx, gyS + bank, 1, 1, pal.grass);
+      const q = wx - c.x0, len = c.x1 - c.x0;
+      const bank = fi(Math.min(26, q * .9, (len - q) * .9));
+      R(sx, gyS + bank, u, H, pal.dirt);
+      R(sx, gyS + bank, u, 1, pal.grass);
       if (bank > 16) {
-        rect(sx, gyS + 18, 1, bank - 18 + 1, pal.water);
-        if ((wx + (G.t * 8 | 0)) % 9 < 2) rect(sx, gyS + 18, 1, 1, pal.waterL);
+        R(sx, gyS + 18, u, bank - 18 + 1, pal.water);
+        if ((wx + (G.t * 8 | 0)) % 9 < 2) R(sx, gyS + 18, u, u, pal.waterL);
       }
       const deck = c.intact || !(wx >= c.g0 && wx < c.g1);
       if (deck) {
-        rect(sx, gyS, 1, 2, wx % 6 === 0 ? '#5a3a1e' : '#9a7448');
-        if (u < 3 || len - u < 4 || (u % 30 === 0)) rect(sx, gyS + 2, 1, bank, '#6a4a28');
-      } else if (wx === c.g0 || wx === c.g1 - 1) rect(sx, gyS + 1, 1, 3, '#9a7448');
+        R(sx, gyS, u, 2, Math.round(wx * K) % (6 * K) === 0 ? '#5a3a1e' : '#9a7448');
+        if (q < 3 || len - q < 4 || (Math.floor(q) % 30 === 0)) R(sx, gyS + 2, u, bank, '#6a4a28');
+      } else if (Math.floor(wx) === c.g0 || Math.floor(wx) === c.g1 - 1) R(sx, gyS + 1, u, 3, '#9a7448');
     }
-    void ci;
   }
   for (const z of lev.zones) {
     if (z.x1 < cx || z.x0 > cx + W) continue;
@@ -3957,7 +3985,7 @@ function updateIntermede(dt) {
 // ---- dessin des scènes (160x90, agrandi x2) ----
 let IC = null;
 function sceneCanvas() { if (!IC) { const [c, x] = mkCanvas(160, 90); IC = { c, x }; } return IC; }
-function sR(x, X, Y, w, h, col) { x.fillStyle = col; x.fillRect(Math.round(X), Math.round(Y), Math.round(w), Math.round(h)); }
+function sR(x, X, Y, w, h, col) { x.fillStyle = col; x.fillRect(fi(X), fi(Y), fi(w), fi(h)); }
 function murMaison(x) {
   sR(x, 0, 0, 160, 60, '#f0e4c4');
   for (let y = 2; y < 60; y += 3) sR(x, 0, y, 160, 1, '#e2d4b2');
@@ -4113,6 +4141,20 @@ let g = gMonde;              // le dessin se fait dans le monde, pis dans l'inte
 let ZOOM_IMAGE = null, UI_UTILISE = false;
 let S = 2, touchMode = false, layout = { left: 0, top: 0, cw: W, ch: H };
 const $ = id => document.getElementById(id);
+
+// Porte une toile du jeu à l'écran. Quand l'écran n'est pas un multiple entier de l'image, grossir au plus proche
+// voisin donne des points inégaux (un de 2, un de 3): on grossit d'abord d'un nombre entier, net, puis l'écran
+// ajuste le reste en douceur. Les points restent carrés et réguliers.
+let preEcran = null;
+function versEcran(src, sx, sy, sw, sh) {
+  const r = out.width / sw, n = Math.floor(r + .02);
+  if (n < 1 || r - n < .04 || r >= 3.5) { octx.imageSmoothingEnabled = n < 1; octx.drawImage(src, sx, sy, sw, sh, 0, 0, out.width, out.height); octx.imageSmoothingEnabled = false; return; }
+  if (!preEcran) { const c = document.createElement('canvas'); preEcran = { c, x: c.getContext('2d') }; }
+  const pw = Math.round(sw * n), ph = Math.round(sh * n), p = preEcran;
+  if (p.c.width !== pw || p.c.height !== ph) { p.c.width = pw; p.c.height = ph; } else p.x.clearRect(0, 0, pw, ph);
+  p.x.imageSmoothingEnabled = false; p.x.drawImage(src, sx, sy, sw, sh, 0, 0, pw, ph);
+  octx.imageSmoothingEnabled = true; octx.drawImage(p.c, 0, 0, out.width, out.height); octx.imageSmoothingEnabled = false;
+}
 
 function resize() {
   const vw = window.innerWidth, vh = window.innerHeight, portrait = vh > vw;
@@ -4372,10 +4414,10 @@ function render() {
   octx.imageSmoothingEnabled = false;
   // le zoom se fait ici, à la résolution de l'écran: chaque pixel du jeu devient un bloc net de l'écran
   const Z = ZOOM_IMAGE;
-  if (Z) { octx.fillStyle = '#000'; octx.fillRect(0, 0, out.width, out.height); octx.drawImage(buf, Z.sx * K, Z.sy * K, W / Z.z * K, H / Z.z * K, 0, 0, out.width, out.height); }
-  else octx.drawImage(buf, 0, 0, out.width, out.height);
+  if (Z) { octx.fillStyle = '#000'; octx.fillRect(0, 0, out.width, out.height); versEcran(buf, Z.sx * K, Z.sy * K, W / Z.z * K, H / Z.z * K); }
+  else versEcran(buf, 0, 0, W * K, H * K);
   flushSprites();
-  if (UI_UTILISE) octx.drawImage(bufUI, 0, 0, out.width, out.height);
+  if (UI_UTILISE) versEcran(bufUI, 0, 0, W * K, H * K);
   flushText();
 }
 
