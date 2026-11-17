@@ -1379,6 +1379,9 @@ function buildUp(n, seed, ev, nuit, bon, rang) {
   }
   push(L + 1 - x, 0, 'fin');
   for (const s of segs) for (let i = s.x0; i < s.x1 && i <= L + 1; i++) slope[i] = s.s;
+  // le chemin est droit devant les deux maisons et leurs dépendances: la grange de Didi ne flotte pas au-dessus d'une pente
+  for (let i = 0; i <= 170; i++) slope[i] = 0;
+  for (let i = L - 260; i <= L + 1; i++) slope[i] = 0;
   // lissage
   const sm = new Float32Array(L + 2), Wd = 20;
   for (let i = 0; i <= L + 1; i++) {
