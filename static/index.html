@@ -2428,105 +2428,184 @@ function fenetre(x, y, w, h, night, frame) {
   if (!night && w >= 4 && h >= 4) { rect(x + .5, y + 1, .5, h - 2, '#b4d6ea'); rect(x + w - 1, y + h - 1.5, .5, 1, '#86b2cc'); }   // un reflet, une ombre
   rect(x + w / 2 - .25, y, .5, h, frame || '#f4f4f0');
   if (h >= 6) rect(x, y + fi(h / 2) - .25, w, .5, frame || '#f4f4f0');
+  rect(x - 1.5, y + h + 1, w + 3, .5, frame || '#f4f4f0'); rect(x - 1, y + h + 1.5, w + 2, .5, 'rgba(0,0,0,.18)');   // la tablette et son ombre
 }
 // Maison du départ (chez Groloup), d'après la photo de famille et vue de face: déclin blanc, toit gris, lucarne,
 // galerie à poteaux blancs au pied rouge, porte et volets rouges, pierre au bas du mur; à gauche, la grange aux tracteurs
 function drawMaisonGrise(X, base, night) {
-  const wall = '#eef0ea', wallD = '#d6dad0', roof = '#4a4e57', roofD = '#3a3d44', trim = '#ffffff', red = '#d8402c', green = '#3f9a62';
-  // la grange aux tracteurs: blanche, linteau rouge, grande ouverture, un tracteur dans l'ombre
+  const wall = '#eef0ea', wallD = '#d6dad0', ombre = '#c4c9c0', roof = '#4a4e57', roofD = '#3a3d44', roofL = '#646a75', trim = '#ffffff', trimD = '#dcdfd8';
+  const red = '#d8402c', redD = '#a93022', green = '#3f9a62', greenD = '#2e7a4b', noir = '#111214', pal = G.pal;
+  // la grange aux tracteurs: blanche, planches cornières, toit de tôle, linteau rouge, grande ouverture
   murH(X - 72, base - 30, 42, 30, wall, wallD);
-  rect(X - 74, base - 32, 46, 2, '#b9bdc0');
-  rect(X - 66, base - 23, 30, 23, '#22252a'); rect(X - 67, base - 25, 32, 2, red);
-  rect(X - 62, base - 11, 4, 11, '#111214'); rect(X - 44, base - 11, 4, 11, '#111214');
-  rect(X - 55, base - 14, 8, 10, '#8f2f26'); rect(X - 54, base - 12, 6, 5, '#5e211c');
-  rect(X - 56, base - 5, 2, 5, '#111214'); rect(X - 48, base - 5, 2, 5, '#111214');
-  rect(X - 56, base - 15, 1, 1, '#f4e8a0'); rect(X - 47, base - 15, 1, 1, '#f4e8a0'); rect(X - 53, base - 17, 4, 1, '#3a3d42');
-  // la maison: son déclin, la pierre de toutes les couleurs au bas de la façade
+  rect(X - 72, base - 30, 1, 30, trim); rect(X - 31, base - 30, 1, 30, trim); rect(X - 72, base - 30, 42, .5, ombre);
+  rect(X - 74, base - 32, 46, 2, '#b9bdc0'); rect(X - 74, base - 32, 46, .5, '#d3d7d9');
+  for (let x = X - 73; x < X - 28; x += 2) rect(x, base - 31.5, .5, 1.5, '#a2a7ab');
+  rect(X - 66, base - 23, 30, 23, '#22252a'); rect(X - 66, base - 23, 30, 1.5, '#17191c'); rect(X - 66, base - 23, .5, 23, '#17191c'); rect(X - 36.5, base - 23, .5, 23, '#2e3238');
+  rect(X - 67, base - 25, 32, 2, red); rect(X - 67, base - 25, 32, .5, '#e8604c'); rect(X - 67, base - 23.5, 32, .5, redD);
+  // un tracteur dans l'ombre, vu de face: gros pneus à crampons, calandre à lattes, phares, volant, tuyau d'échappement
+  rect(X - 59, base - 4.5, 16, .5, '#3a3d42');
+  for (const tx of [X - 62, X - 44]) {
+    rect(tx, base - 11, 4, 11, noir); rect(tx, base - 11, .5, .5, '#22252a'); rect(tx + 3.5, base - 11, .5, .5, '#22252a');
+    for (let yy = base - 10; yy < base; yy += 1.5) { rect(tx, yy, 2, .5, '#2f3238'); rect(tx + 2, yy + .5, 2, .5, '#2f3238'); }
+  }
+  rect(X - 49.5, base - 19.5, .5, 5.5, '#55595f'); rect(X - 50, base - 20, 1.5, .5, '#6a6e74');
+  rect(X - 53, base - 17, 4, .5, '#3a3d42'); rect(X - 53.5, base - 16.5, .5, 1.5, '#3a3d42'); rect(X - 49, base - 16.5, .5, 1.5, '#3a3d42'); rect(X - 51.25, base - 16.5, .5, 2.5, '#3a3d42');
+  rect(X - 55, base - 14, 8, 10, '#8f2f26'); rect(X - 55, base - 14, 8, .5, '#b24236'); rect(X - 55, base - 14, .5, .5, '#22252a'); rect(X - 47.5, base - 14, .5, .5, '#22252a');
+  rect(X - 54, base - 12, 6, 5, '#5e211c'); for (let x = X - 53.5; x < X - 48; x += 1) rect(x, base - 12, .5, 5, '#7c2b23');
+  rect(X - 51.5, base - 13.5, 1, 1, '#d8b040');
+  for (const hx of [X - 56.5, X - 46.5]) { rect(hx, base - 15.5, 1.5, 1.5, '#f4e8a0'); rect(hx, base - 15.5, .5, .5, '#ffffff'); rect(hx + 1, base - 14.5, .5, .5, '#c8b860'); }
+  for (const tx of [X - 56, X - 48]) { rect(tx, base - 5, 2, 5, noir); for (let yy = base - 4.5; yy < base; yy += 1) rect(tx + .5, yy, 1, .5, '#2f3238'); }
+  // la maison: son déclin, ses planches cornières, la pierre de toutes les couleurs au bas de la façade
   const top = base - 28;
   murH(X - 22, top, 44, 28, wall, wallD);
-  const st = ['#b9a98c', '#8f97a3', '#c9b79a', '#7d8894', '#a89a86'];
-  for (let y = base - 8; y < base; y += 3) for (let x = X - 22 + ((y >> 1) % 2) * 2; x < X + 22; x += 4) rect(x, y, Math.min(3, X + 22 - x), 2, st[hsh(x * 7 + y * 13) % st.length]);
-  // le toit (on voit tout le versant), la cheminée, la lucarne à volets rouges
+  rect(X - 22, top, 1, 20, trim); rect(X + 21, top, 1, 20, trim); rect(X - 22, top + 1, 44, .5, ombre);
+  const st = ['#b9a98c', '#8f97a3', '#c9b79a', '#7d8894', '#a89a86', '#b4a08a'];
+  rect(X - 22, base - 8, 44, 8, '#6f6c64');
+  for (let r = 0; r < 3; r++) {
+    const y = base - 7.5 + r * 2.5, h = 2;
+    for (let x = X - 22 + (r % 2 ? 0 : -1.5), i = 0; x < X + 22; i++) {
+      const w = 2.5 + (hsh(i * 7 + r * 31) % 5) * .5, x0 = Math.max(x, X - 22), x1 = Math.min(x + w, X + 22);
+      if (x1 - x0 >= 1) {
+        rect(x0, y, x1 - x0, h, st[hsh(i * 13 + r * 5) % st.length]); rect(x0, y, x1 - x0, .5, 'rgba(255,255,255,.22)'); rect(x0, y + h - .5, x1 - x0, .5, 'rgba(0,0,0,.16)');
+        if (x1 - x0 >= 2) { rect(x0, y, .5, .5, '#6f6c64'); rect(x1 - .5, y, .5, .5, '#6f6c64'); }
+      }
+      x += w + .5;
+    }
+  }
+  // le toit de bardeaux (on voit tout le versant), sa faîtière, la cheminée, la lucarne à volets rouges
   versant(X - 24, top + 1, 48, 15, roof, roofD, .15);
-  rect(X - 24, top, 48, 1, trim);
-  rect(X + 7, top - 19, 4, 5, '#e9e6dc'); rect(X + 6, top - 20, 6, 1, '#c8c4b6');
-  rect(X - 7, top - 11, 13, 8, wall); rect(X - 8, top - 12, 15, 1, trim); rect(X - 8, top - 13, 15, 1, roofD);
-  fenetre(X - 3, top - 9, 5, 5, night); rect(X - 6, top - 10, 2, 7, red); rect(X + 3, top - 10, 2, 7, red);
+  rect(X - 21.75, top - 14.5, 43.5, .5, roofL);
+  rect(X - 24, top, 48, 1, trim); rect(X - 24, top + .5, 48, .5, trimD);
+  rect(X + 7, top - 19, 4, 5, '#e9e6dc'); rect(X + 10.5, top - 19, .5, 5, '#cfcbbf'); rect(X + 7, top - 17.5, 4, .5, '#cfcbbf'); rect(X + 7, top - 16, 4, .5, '#cfcbbf');
+  rect(X + 6, top - 20, 6, 1, '#c8c4b6'); rect(X + 6, top - 20, 6, .5, '#dedbd0');
+  rect(X - 7, top - 11, 13, 8, wall); for (let yy = top - 10; yy < top - 3; yy += 1.5) rect(X - 7, yy, 13, .5, wallD);
+  rect(X - 8, top - 12, 15, 1, trim); rect(X - 8, top - 13, 15, 1, roofD); rect(X - 8, top - 13, 15, .5, roof); rect(X - 7, top - 11, 13, .5, ombre);
+  fenetre(X - 3, top - 9, 5, 5, night); volet(X - 6, top - 10, 2, 7, red, redD); volet(X + 3, top - 10, 2, 7, red, redD);
   // sous la galerie: la porte rouge vitrée entre deux fenêtres à volets rouges
-  fenetre(X - 18, base - 15, 5, 7, night); rect(X - 21, base - 16, 2, 9, red); rect(X - 12, base - 16, 2, 9, red);
-  fenetre(X + 5, base - 15, 5, 7, night); rect(X + 2, base - 16, 2, 9, red); rect(X + 11, base - 16, 2, 9, red);
-  rect(X - 7, base - 16, 6, 13, red); rect(X - 6, base - 15, 4, 5, night ? '#ffd860' : '#c8dcea'); rect(X - 2, base - 9, 1, 1, '#f4e8a0');
+  fenetre(X - 18, base - 15, 5, 7, night); volet(X - 21, base - 16, 2, 9, red, redD); volet(X - 12, base - 16, 2, 9, red, redD);
+  fenetre(X + 5, base - 15, 5, 7, night); volet(X + 2, base - 16, 2, 9, red, redD); volet(X + 11, base - 16, 2, 9, red, redD);
+  rect(X - 7.5, base - 16.5, 7, 13.5, trim); porte(X - 7, base - 16, 6, 13, red, redD, night ? '#ffd860' : '#c8dcea');
   // la galerie: son petit toit, quatre poteaux blancs au pied rouge, le plancher et les marches verts
-  for (let r = 0; r < 4; r++) rect(X - 25 + r * 1.5, base - 20 - r, 40 - r * 3, 1, r % 2 ? roofD : roof);
-  rect(X - 26, base - 19, 42, 1, trim);
-  for (const px of [X - 24, X - 10, X - 1, X + 13]) { rect(px, base - 18, 2, 15, trim); rect(px, base - 7, 2, 4, red); }
-  rect(X - 26, base - 3, 42, 1, green); rect(X - 26, base - 2, 42, 1, trim); rect(X - 25, base - 1, 40, 1, '#2a2c30');
-  rect(X - 9, base - 2, 9, 1, green); rect(X - 10, base - 1, 11, 1, trim);
-  // grand érable à droite
-  const pal = G.pal;
-  rect(X + 32, base - 20, 3, 20, '#4a3424');
-  DISC(g, X + 33, base - 30, 13, 12, pal.leafD); DISC(g, X + 31, base - 33, 10, 9, pal.leaf);
-  for (let i = 0; i < 20; i++) rect(X + 22 + (hsh(i * 7 + 3) % 22), base - 40 + (hsh(i * 5) % 18), 1, 1, pal.leafD);
-  // boîte aux lettres sur son poteau
-  rect(X + 26, base - 9, 1, 9, trim); rect(X + 24, base - 12, 5, 3, '#dfe1dc');
+  for (let r = 0; r < 4; r += .5) rect(X - 25 + r * 1.5, base - 19.5 - r, 40 - r * 3, .5, r % 2 >= 1.5 ? roofD : roof);
+  bardeaux(X - 25, base - 19, 40, 4, 1.5, roofD); rect(X - 19, base - 23.5, 28, .5, roofL);
+  rect(X - 26, base - 19, 42, 1, trim); rect(X - 26, base - 18.5, 42, .5, trimD);
+  for (const px of [X - 24, X - 10, X - 1, X + 13]) {
+    rect(px, base - 18, 2, 15, trim); rect(px + 1.5, base - 18, .5, 15, trimD); rect(px - .5, base - 18, 3, .5, trim); rect(px - .5, base - 17.5, 3, .5, trimD);
+    rect(px, base - 7, 2, 4, red); rect(px + 1.5, base - 7, .5, 4, redD); rect(px - .5, base - 3.5, 3, .5, redD);
+  }
+  rect(X - 26, base - 3, 42, 1, green); rect(X - 26, base - 2.5, 42, .5, greenD); rect(X - 26, base - 2, 42, 1, trim); rect(X - 26, base - 1.5, 42, .5, trimD);
+  rect(X - 25, base - 1, 40, 1, '#2a2c30'); for (let x = X - 25; x < X + 15; x += 1) rect(x, base - 1 + ((x - X) & 1) * .5, .5, .5, '#50545a');
+  rect(X - 9, base - 2, 9, 1, green); rect(X - 9, base - 1.5, 9, .5, greenD); rect(X - 10, base - 1, 11, 1, trim); rect(X - 10, base - .5, 11, .5, trimD);
+  // grand érable à droite: le tronc et ses branches, le feuillage par touffes
+  rect(X + 32, base - 20, 3, 20, '#4a3424'); rect(X + 32, base - 20, .5, 20, '#5f4532'); rect(X + 34.5, base - 20, .5, 20, '#382618');
+  rect(X + 31.5, base - 1.5, .5, 1.5, '#4a3424'); rect(X + 35, base - 1.5, .5, 1.5, '#382618');
+  for (let i = 0; i < 6; i++) rect(X + 33 + (i % 2) * .5, base - 17 + i * 3, .5, 1.5, '#382618');
+  LN(g, X + 33, base - 20, X + 27, base - 26, '#4a3424'); LN(g, X + 34, base - 20, X + 40, base - 27, '#4a3424');
+  DISC(g, X + 33, base - 30, 13, 12, pal.leafD); DISC(g, X + 25, base - 27, 5, 4, pal.leafD); DISC(g, X + 42, base - 29, 4, 5, pal.leafD);
+  DISC(g, X + 31, base - 33, 10, 9, pal.leaf); DISC(g, X + 39, base - 32, 5, 5, pal.leaf); DISC(g, X + 26, base - 29, 4, 3, pal.leaf); DISC(g, X + 34, base - 39, 6, 3, pal.leaf);
+  DISC(g, X + 29, base - 36, 5, 4, 'rgba(255,255,255,.10)'); DISC(g, X + 37, base - 35, 3, 2, 'rgba(255,255,255,.08)');
+  for (let i = 0; i < 70; i++) {
+    const a = hsh(i * 7 + 3) / 37 % 6.283, d = (hsh(i * 5 + 1) % 100) / 100, fx = X + 33 + Math.cos(a) * 12 * d, fy = base - 31 + Math.sin(a) * 11 * d;
+    rect(fx, fy, i % 3 ? .5 : 1, .5, i % 2 ? pal.leafD : 'rgba(255,255,255,.16)');
+  }
+  // boîte aux lettres sur son poteau, son petit drapeau rouge
+  rect(X + 26, base - 9, 1, 9, trim); rect(X + 26.5, base - 9, .5, 9, trimD);
+  rect(X + 24, base - 12, 5, 3, '#dfe1dc'); rect(X + 24, base - 12, .5, .5, wall); rect(X + 28.5, base - 12, .5, .5, wall); rect(X + 24, base - 9.5, 5, .5, '#c3c6c0');
+  rect(X + 29, base - 13.5, .5, 2.5, red); rect(X + 29, base - 13.5, 1.5, 1, red);
 }
 // Maison de Didi, d'après la photo de famille: maison carrée blanche aux coins saumon, toit noir en pavillon, jardin plein de fleurs;
 // à gauche la grange de bois brun et l'appentis (le chalet de droite, arrivé bien plus tard, n'y est pas)
 function drawMaisonDidi(X, base, night) {
-  const wall = '#f1f1ec', wallD = '#d9dad3', quoin = '#e9b49c', roof = '#2b2a2d', roofD = '#3a393d';
+  const wall = '#f1f1ec', wallD = '#d9dad3', quoin = '#e9b49c', quoinD = '#d39a82', roof = '#2b2a2d', roofD = '#3a393d', white = '#fbfbf8', whiteD = '#dedfd8', pal = G.pal;
   // la grange, comme sur la photo de 2013: un long mur de bois brun percé de petites fenêtres et d'une grande porte,
   // un pignon bas de planches grisées sous le toit de tôle, le tuyau de poêle
-  const bx = X - 59, tin = '#c6ccd0';
-  rect(bx - 13, base - 27, 2, 9, '#a9afb3'); rect(bx - 14, base - 28, 4, 1, '#8f969b');
-  for (let r = 0; r < 8; r++) {
-    const half = 19 - r * 2.4, y = base - 13 - r; if (half < 1) break;
-    rect(bx - half, y, half * 2, 1, r % 3 === 2 ? '#7d8376' : '#8b9085');
-    rect(bx - half - 2, y, 3, 1, hsh(r * 7 + 1) % 4 ? tin : '#a8623c'); rect(bx + half - 1, y, 3, 1, hsh(r * 11 + 3) % 4 ? tin : '#a8623c');
+  const bx = X - 59, tin = '#c6ccd0', tinD = '#a9afb3', bois = '#8a5a3a', boisD = '#74482c';
+  rect(bx - 13, base - 27, 2, 9, tinD); rect(bx - 11.5, base - 27, .5, 9, '#8f969b'); rect(bx - 13, base - 24, 2, .5, '#8f969b');
+  rect(bx - 14, base - 28, 4, 1, '#8f969b'); rect(bx - 14, base - 28, 4, .5, '#b9bfc3');
+  for (let r = 0; r < 8; r += .5) {
+    const half = 19 - r * 2.4, y = base - 12.5 - r; if (half < 1) break;
+    rect(bx - half, y, half * 2, .5, '#8b9085');
+    for (let x = Math.ceil((bx - half) / 2) * 2; x < bx + half - .5; x += 2) rect(x, y, .5, .5, '#747a6e');
+    const rouille = k => hsh(Math.floor(r) * k + 1) % 4 ? tin : '#a8623c';
+    rect(bx - half - 2, y, 3, .5, rouille(7)); rect(bx + half - 1, y, 3, .5, rouille(11));
+    rect(bx - half - 2, y, .5, .5, '#e0e4e6'); rect(bx + half + 1.5, y, .5, .5, tinD);
   }
-  rect(bx - 2, base - 21, 4, 1, tin);
-  murV(bx - 19, base - 12, 38, 12, '#8a5a3a', '#74482c');
-  rect(bx - 21, base - 13, 42, 1, tin);
-  for (const wx of [bx - 16, bx - 10, bx - 4]) { rect(wx - 1, base - 10, 4, 4, '#e0d8c8'); rect(wx, base - 9, 2, 2, night ? '#ffd860' : '#2a2c2e'); }
-  rect(bx + 3, base - 10, 13, 10, '#a8643c'); rect(bx + 3, base - 7, 13, 1, '#8a4e2c'); rect(bx + 3, base - 4, 13, 1, '#8a4e2c'); rect(bx + 2, base - 11, 15, 1, '#6a4028');
-  // la corde à linge, entre la grange et l'appentis
-  rect(X - 40, base - 12, 8, 1, '#d8d0c0');
-  rect(X - 39, base - 11, 2, 3, '#f4f4f0'); rect(X - 36, base - 11, 2, 4, '#7aa0d8'); rect(X - 34, base - 11, 1, 3, '#e8a0b0');
+  rect(bx - 2, base - 21, 4, 1, tin); rect(bx - 2, base - 21, 4, .5, '#e0e4e6');
+  murV(bx - 19, base - 12, 38, 12, bois, boisD);
+  for (let i = 0; i < 9; i++) rect(bx - 19 + (hsh(i * 13 + 2) % 37), base - 12, 1, 12, i % 2 ? '#93613f' : '#825436');
+  for (let i = 0; i < 7; i++) rect(bx - 18 + (hsh(i * 29 + 5) % 35), base - 10 + (hsh(i * 3) % 8), .5, 1, '#5e3a22');
+  rect(bx - 19, base - .5, 38, .5, '#5e3a22');
+  rect(bx - 21, base - 13, 42, 1, tin); rect(bx - 21, base - 12.5, 42, .5, tinD); for (let x = bx - 20; x < bx + 21; x += 2) rect(x, base - 13, .5, .5, tinD);
+  for (const wx of [bx - 16, bx - 10, bx - 4]) {
+    rect(wx - 1, base - 10, 4, 4, '#e0d8c8'); rect(wx, base - 9, 2, 2, night ? '#ffd860' : '#2a2c2e');
+    rect(wx + .75, base - 9, .5, 2, '#e0d8c8'); rect(wx, base - 8.25, 2, .5, '#e0d8c8'); rect(wx - 1.5, base - 6, 5, .5, '#c8c0b0');
+  }
+  rect(bx + 3, base - 10, 13, 10, '#a8643c'); for (let x = bx + 4.5; x < bx + 16; x += 1.5) rect(x, base - 10, .5, 10, '#98593a');
+  rect(bx + 3, base - 7.5, 13, 1, '#8a4e2c'); rect(bx + 3, base - 3.5, 13, 1, '#8a4e2c');
+  LN(g, bx + 3.5, base - 3.5, bx + 8.5, base - 7, '#8a4e2c'); LN(g, bx + 10, base - 7, bx + 15, base - 3.5, '#8a4e2c');
+  rect(bx + 9.25, base - 10, .5, 10, '#6a4028'); rect(bx + 8, base - 5.5, .5, 1.5, '#2e2e30'); rect(bx + 10.5, base - 5.5, .5, 1.5, '#2e2e30');
+  for (const hy of [base - 8.5, base - 2]) { rect(bx + 3, hy, 1.5, .5, '#2e2e30'); rect(bx + 14.5, hy, 1.5, .5, '#2e2e30'); }
+  rect(bx + 2, base - 11, 15, 1, '#6a4028'); rect(bx + 2, base - 11, 15, .5, '#7c4e34');
+  // la corde à linge, entre la grange et l'appentis: une chemise, un pantalon, un bas
+  rect(X - 40, base - 12, 8, .5, '#d8d0c0');
+  rect(X - 39.5, base - 11.5, 2.5, 3, '#f4f4f0'); rect(X - 40, base - 11.5, .5, 1.5, '#f4f4f0'); rect(X - 37, base - 11.5, .5, 1.5, '#f4f4f0'); rect(X - 38.5, base - 11.5, .5, 1, '#d8d8d2');
+  rect(X - 36, base - 11.5, 2, 1.5, '#7aa0d8'); rect(X - 36, base - 10, .75, 2.5, '#7aa0d8'); rect(X - 34.75, base - 10, .75, 2.5, '#7aa0d8');
+  rect(X - 33.5, base - 11.5, 1, 2.5, '#e8a0b0'); rect(X - 33.5, base - 9.5, 1.5, .5, '#e8a0b0');
+  for (const cx of [X - 39.5, X - 37.5, X - 36, X - 34.5, X - 33]) rect(cx, base - 12.5, .5, 1, '#8a6a48');
   // l'appentis de tôle blanche, entre la grange et la maison
   murV(X - 32, base - 15, 15, 15, '#eceee9', '#d2d5cf');
-  for (let i = 0; i < 15; i++) rect(X - 32 + i, base - 16 - (i >> 2), 1, 1 + (i >> 2), '#dfe2de');
+  for (let i = 0; i < 15; i += .5) { const t = fi(base - 16 - i / 4); rect(X - 32 + i, t, .5, base - 15 - t, '#dfe2de'); rect(X - 32 + i, t, .5, .5, '#b9bfc3'); }
   // la maison, d'après la photo: grands carreaux blancs, pierres d'angle saumon, toit noir à quatre versants bordé de blanc
-  const top = base - 32, white = '#fbfbf8';
+  const top = base - 32;
   rect(X - 17, top, 34, 32, wall);
-  for (let y = top + 3; y < base; y += 4) rect(X - 17, y, 34, 1, wallD);
-  for (let y = top, r = 0; y < base; y += 4, r++) for (let x = X - 17 + (r % 2 ? 4 : 0); x < X + 17; x += 8) rect(x, y, 1, 3, wallD);
-  for (let y = top + 4, r = 0; y < base; y += 4, r++) { const w = r % 2 ? 3 : 5; rect(X - 17, y, w, 3, quoin); rect(X + 17 - w, y, w, 3, quoin); }
-  for (let r = 0; r < 11; r++) { const inset = r * 1.7; rect(X - 20 + inset, top - 2 - r, 40 - inset * 2, 1, (r >> 1) % 2 ? roofD : roof); }
-  rect(X - 21, top - 1, 42, 1, white);
-  rect(X + 5, top - 16, 3, 5, '#d9d2bf'); rect(X + 4, top - 17, 5, 1, '#3a3a3c');
+  for (let y = top + 3; y < base; y += 4) rect(X - 17, y + .5, 34, .5, wallD);
+  for (let y = top, r = 0; y < base; y += 4, r++) for (let x = X - 17 + (r % 2 ? 4 : 0); x < X + 17; x += 8) rect(x, y, .5, 3.5, wallD);
+  for (let y = top + 4, r = 0; y < base; y += 4, r++) {
+    const w = r % 2 ? 3 : 5;
+    for (const qx of [X - 17, X + 17 - w]) { rect(qx, y, w, 3, quoin); rect(qx, y, w, .5, '#f3c9b6'); rect(qx, y + 2.5, w, .5, quoinD); }
+  }
+  rect(X - 17, top, 34, 1, 'rgba(0,0,0,.10)');
+  for (let r = 0; r < 11; r += .5) { const inset = r * 1.7; rect(X - 20 + inset, top - 1.5 - r, 40 - inset * 2, .5, r % 2 >= 1.5 ? roofD : roof); }
+  bardeaux(X - 20, top - 1, 40, 11, 1.7, roofD); rect(X - 2, top - 12, 4.5, .5, '#4c4b50');
+  rect(X - 21, top - 1, 42, 1, white); rect(X - 21, top - .5, 42, .5, whiteD);
+  rect(X + 5, top - 16, 3, 5, '#d9d2bf'); rect(X + 7.5, top - 16, .5, 5, '#c2bba8'); rect(X + 5, top - 14.5, 3, .5, '#c2bba8'); rect(X + 5, top - 13, 3, .5, '#c2bba8');
+  rect(X + 4, top - 17, 5, 1, '#3a3a3c'); rect(X + 4, top - 17, 5, .5, '#58585c');
   // à l'étage: deux fenêtres (pas de porte); dans le toit, une mini lucarne
   fenetre(X - 9, top + 4, 5, 6, night); fenetre(X + 5, top + 4, 5, 6, night);
-  rect(X - 3, top - 8, 7, 5, wall); rect(X - 4, top - 9, 9, 1, roofD); rect(X - 4, top - 3, 9, 1, white);
-  rect(X - 1, top - 7, 3, 3, night ? '#ffd860' : '#9cc4dc');
+  rect(X - 3, top - 8, 7, 5, wall); rect(X - 4, top - 9, 9, 1, roofD); rect(X - 4, top - 9, 9, .5, '#4c4b50'); rect(X - 4, top - 3, 9, 1, white); rect(X - 4, top - 2.5, 9, .5, whiteD);
+  rect(X - 1.5, top - 7.5, 4, 4, white); rect(X - 1, top - 7, 3, 3, night ? '#ffd860' : '#9cc4dc'); rect(X + .25, top - 7, .5, 3, white); rect(X - 1, top - 5.75, 3, .5, white);
   // au rez-de-chaussée: la petite fenêtre sous son auvent, la porte d'entrée sous son petit toit saumon, le perron de bois
   fenetre(X - 9, base - 12, 5, 6, night);
-  rect(X - 13, base - 16, 13, 1, '#d6d3cb'); rect(X - 12, base - 15, 1, 9, '#55585a'); rect(X - 2, base - 15, 1, 9, '#55585a');
-  rect(X + 6, base - 13, 5, 11, white); rect(X + 7, base - 12, 3, 3, night ? '#ffd860' : '#56646a'); rect(X + 9, base - 7, 1, 1, '#8a8d90');
-  rect(X + 4, base - 15, 9, 1, '#c98f7a'); rect(X + 6, base - 16, 5, 1, '#c98f7a'); rect(X + 8, base - 17, 1, 1, '#c98f7a'); rect(X + 3, base - 14, 11, 1, white);
-  rect(X + 4, base - 13, 1, 11, '#6b4a3a'); rect(X + 12, base - 13, 1, 11, '#6b4a3a');
-  rect(X + 5, base - 2, 7, 1, '#7a5a44'); rect(X + 4, base - 1, 9, 1, '#6b4a3a');
-  // lilas et épinettes
-  DISC(g, X - 26, base - 10, 7, 8, '#6a8a4a'); DISC(g, X - 27, base - 13, 5, 5, '#d8c8e8');
-  for (let i = 0; i < 8; i++) rect(X - 31 + (hsh(i * 3) % 9), base - 17 + (hsh(i * 7) % 8), 1, 1, '#b8a0d8');
-  for (let k = 0; k < 16; k++) { const w = Math.floor(k / 2.4); rect(X + 22 - w, base - 18 + k, w * 2 + 1, 1, k % 5 > 3 ? G.pal.treeD : G.pal.tree); }
-  // la barrière du jardin et le gros massif de fleurs blanches, à droite
-  DISC(g, X + 33, base - 4, 4, 4, '#3a7a2a');
-  for (let i = 0; i < 14; i++) rect(X + 30 + (hsh(i * 11 + 5) % 8), base - 8 + (hsh(i * 7 + 1) % 6), 1, 1, '#ffffff');
-  rect(X + 39, base - 7, 1, 7, '#6a6a68'); rect(X + 46, base - 7, 1, 7, '#6a6a68'); rect(X + 39, base - 6, 8, 1, '#8a8a88'); rect(X + 39, base - 3, 8, 1, '#8a8a88');
-  // jardin de fleurs
+  rect(X - 13, base - 16.5, 13, 1.5, '#d6d3cb'); rect(X - 13, base - 15.5, 13, .5, '#b6b3ab'); for (let x = X - 12; x < X; x += 1.5) rect(x, base - 16.5, .5, 1, '#c4c1b9');
+  rect(X - 12, base - 15, .5, 9, '#55585a'); rect(X - 1.5, base - 15, .5, 9, '#55585a');
+  porte(X + 6, base - 13, 5, 11, white, '#cfd0c9', night ? '#ffd860' : '#56646a', '#8a8d90');
+  for (let r = 0; r < 3; r += .5) { const half = 4.5 - r * 1.5; rect(X + 8.5 - half, base - 14.5 - r, half * 2, .5, r % 1 >= .5 ? '#b97f6a' : '#c98f7a'); }
+  rect(X + 3, base - 14, 11, 1, white); rect(X + 3, base - 13.5, 11, .5, whiteD);
+  rect(X + 4, base - 13, 1, 11, '#6b4a3a'); rect(X + 4, base - 13, .5, 11, '#80604e'); rect(X + 12, base - 13, 1, 11, '#6b4a3a'); rect(X + 12, base - 13, .5, 11, '#80604e');
+  rect(X + 5, base - 2, 7, 1, '#7a5a44'); rect(X + 5, base - 2, 7, .5, '#927058'); rect(X + 4, base - 1, 9, 1, '#6b4a3a'); rect(X + 4, base - 1, 9, .5, '#80604e');
+  // le lilas en fleur et l'épinette
+  DISC(g, X - 26, base - 10, 7, 8, '#5c7c40'); DISC(g, X - 27, base - 11, 6, 6, '#6a8a4a'); rect(X - 26.5, base - 3, 1, 3, '#5a4030');
+  for (let i = 0; i < 9; i++) {
+    const lx = X - 31 + (hsh(i * 3 + 1) % 10), ly = base - 18 + (hsh(i * 7 + 2) % 9);
+    DISC(g, lx, ly, .5, 1.5, i % 3 ? '#d8c8e8' : '#c4aee0'); rect(lx + .5, ly - 1, .5, .5, '#efe6f6'); rect(lx, ly + 1, .5, .5, '#a88cd0');
+  }
+  rect(X + 22, base - 3, 1, 3, '#4a3020');
+  for (let k = 0; k < 16; k += .5) { const w = Math.floor(((k % 5) * .3 + k / 2.7) * 2) / 2; rect(X + 22.5 - w - .25, base - 18 + k, w * 2 + .5, .5, k % 5 >= 4 ? pal.treeD : pal.tree); }
+  // le gros massif de fleurs blanches et la barrière du jardin, à droite
+  DISC(g, X + 33, base - 4, 4, 4, '#2f6a24'); DISC(g, X + 33, base - 5, 4, 3, '#3a7a2a');
+  for (let i = 0; i < 16; i++) {
+    const fx = X + 29.5 + (hsh(i * 11 + 5) % 16) / 2, fy = base - 8.5 + (hsh(i * 7 + 1) % 11) / 2;
+    rect(fx, fy + .25, 1.5, .5, '#ffffff'); rect(fx + .5, fy - .25, .5, 1.5, '#ffffff'); rect(fx + .5, fy + .25, .5, .5, '#ffd23a');
+  }
+  for (let x = X + 40.5; x < X + 46; x += 1.5) rect(x, base - 6.5, .5, 6.5, '#9a9a98');
+  rect(X + 39, base - 6, 8, .5, '#8a8a88'); rect(X + 39, base - 3, 8, .5, '#8a8a88');
+  for (const px of [X + 39, X + 46]) { rect(px, base - 7, 1, 7, '#6a6a68'); rect(px, base - 7, .5, 7, '#84847f'); rect(px - .25, base - 7.5, 1.5, .5, '#84847f'); }
+  // le jardin de fleurs: une tige fine, une feuille, une corolle et son cœur
   const cols = ['#ff6a9a', '#b47aff', '#e83a3a', '#ffd23a', '#ffffff', '#ff9a3a'];
   for (let i = 0; i < 46; i++) {
-    const fx = X - 22 + (hsh(i * 13 + 1) % 26), fy = base - 1 - (hsh(i * 17) % 6);
-    rect(fx, fy + 1, 1, 2, '#3a7a2a'); rect(fx, fy, 1, 1, cols[hsh(i * 29) % cols.length]);
+    const fx = X - 22 + (hsh(i * 13 + 1) % 52) / 2, fy = base - 1.5 - (hsh(i * 17) % 11) / 2, col = cols[hsh(i * 29) % cols.length];
+    rect(fx + .25, fy + 1, .5, 2.5, '#3a7a2a'); rect(fx + (i % 2 ? .75 : -.25), fy + 1.5, .5, .5, '#4a8a36');
+    rect(fx, fy, 1, 1, col); rect(fx + .25, fy + .25, .5, .5, col === '#ffd23a' || col === '#ffffff' ? '#e8943a' : '#ffe9a0');
   }
 }
 function drawBarn(X, base) {
@@ -2560,7 +2639,25 @@ function tirerRang() {
 // murs à déclin (lignes couchées) ou en planches (lignes debout); un versant de toit vu de face; un pignon
 function murH(x, y, w, h, c, cD, pas) { rect(x, y, w, h, c); for (let yy = y + 1; yy < y + h; yy += (pas || 3) / 2) rect(x, yy, w, 1 / K, cD); }
 function murV(x, y, w, h, c, cD, pas) { rect(x, y, w, h, c); for (let xx = x + 1; xx < x + w; xx += (pas || 3) / 2) rect(xx, y, 1 / K, h, cD); }
-function versant(x, y, w, n, c, cD, fuite) { for (let r = 0; r < n; r += 1 / K) rect(x + r * (fuite || 0), y - 1 / K - r, w - 2 * r * (fuite || 0), 1 / K, r % 2 >= 1.5 ? cD : c); }
+function versant(x, y, w, n, c, cD, fuite) {
+  const f = fuite || 0;
+  for (let r = 0; r < n; r += 1 / K) rect(x + r * f, y - 1 / K - r, w - 2 * r * f, 1 / K, r % 2 >= 1.5 ? cD : c);
+  bardeaux(x, y, w, n, f, cD);
+}
+// les joints des bardeaux, décalés d'un rang sur l'autre (rangs de 2 points, comme dans versant)
+function bardeaux(x, y, w, n, f, cD) {
+  for (let r = 0; r + 1.5 <= n; r += 2) for (let xx = x + r * f + 1 + (r % 4 ? 1.5 : 0); xx < x + w - r * f - 1; xx += 3) rect(xx, y - r - 1.5, .5, 1.5, cD);
+}
+// un volet à lattes; une porte à panneaux (vitrée en haut si « vitre »)
+function volet(x, y, w, h, c, cD) { rect(x, y, w, h, c); for (let yy = y + .5; yy < y + h - .5; yy += 1) rect(x + .5, yy, w - 1, .5, cD); }
+function porte(x, y, w, h, c, cD, vitre, poignee) {
+  rect(x, y, w, h, c);
+  const hv = vitre ? Math.floor(h * .4) : 0;
+  if (vitre) { rect(x + 1, y + 1, w - 2, hv, vitre); rect(x + w / 2 - .25, y + 1, .5, hv, c); rect(x + 1, y + 1 + hv / 2 - .25, w - 2, .5, c); }
+  const py = y + 1.5 + hv, ph = h - hv - 2.5, pw = (w - 2.5) / 2;
+  for (const px of [x + 1, x + 1.5 + pw]) { rect(px, py, pw, .5, cD); rect(px, py + ph - .5, pw, .5, cD); rect(px, py, .5, ph, cD); rect(px + pw - .5, py, .5, ph, cD); }
+  rect(x + w - 1.5, y + hv + 1.5, .5, 1, poignee || '#f4e8a0');
+}
 function pignon(x, y, w, c, cD, bord) {
   for (let r = 0; r < 40; r += 1 / K) {
     const half = w / 2 - r * 1.1; if (half < .5) break;
@@ -2751,44 +2848,67 @@ function drawDecor(cx, cy) {
   }
 }
 
+const SOL_Y = new Float32Array(W * K + 1);
 function drawGround(cx, cy) {
-  const lev = G.lev, pal = G.pal, u = 1 / K;
+  const lev = G.lev, pal = G.pal, u = 1 / K, N = W * K, ys = SOL_Y;
   const R = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
-  // colonne fine par colonne fine: la pente monte par demi-points. Le sol n'est jamais plus bas que là où les
-  // bâtiments et les personnages sont posés (round(gy)): rien ne flotte, au pire ça s'enfonce d'un point fin.
-  for (let n = 0; n < W * K; n++) {
-    const sx = n * u, wx = sx + cx, i0 = clamp(Math.floor(wx), 0, lev.L), i1 = Math.min(lev.L, i0 + 1);
-    const gyS = Math.floor((lev.gy[i0] + (lev.gy[i1] - lev.gy[i0]) * clamp(wx - i0, 0, 1)) * K) / K - cy;
-    let c = null;
-    for (const k of lev.creeks) if (wx >= k.x0 && wx < k.x1) { c = k; break; }
-    if (!c) {
-      R(sx, gyS + 5, u, H, pal.dirt);
-      R(sx, gyS + 5, u, 2, pal.dirtD);
-      R(sx, gyS + 34, u, H, pal.dirtD);
-      const h = hsh(Math.round(wx * K) + 7919 * (n & 1));
-      if (h % 7 === 0) R(sx, gyS + 10 + ((h >> 8) % 40) * u, u, u, pal.dirtDD);
-      if (h % 9 === 4) R(sx, gyS + 9 + ((h >> 6) % 44) * u, u, 1, pal.dirtD);
-      if (h % 11 === 0) R(sx, gyS + 38 + ((h >> 9) % 60) * u, u, u, pal.dirtDD);
-      R(sx, gyS, u, 1, pal.roadL);
-      R(sx, gyS + 1, u, 4, pal.road);
-      if (h % 5 === 0) R(sx, gyS + 1 + ((h >> 4) % 8) * u, u, u, pal.roadD);
-      if (h % 6 === 1) R(sx, gyS + 1 + ((h >> 5) % 7) * u, u, u, pal.roadL);
-      if (h % 13 === 0) R(sx, gyS - ((h >> 3) & 1 ? 1 : u), u, 1, pal.grass);
-    } else {
-      const q = wx - c.x0, len = c.x1 - c.x0;
-      const bank = fi(Math.min(26, q * .9, (len - q) * .9));
-      R(sx, gyS + bank, u, H, pal.dirt);
-      R(sx, gyS + bank, u, 1, pal.grass);
-      if (bank > 16) {
-        R(sx, gyS + 18, u, bank - 18 + 1, pal.water);
-        if ((wx + (G.t * 8 | 0)) % 9 < 2) R(sx, gyS + 18, u, u, pal.waterL);
-      }
-      const deck = c.intact || !(wx >= c.g0 && wx < c.g1);
-      if (deck) {
-        R(sx, gyS, u, 2, Math.round(wx * K) % (6 * K) === 0 ? '#5a3a1e' : '#9a7448');
-        if (q < 3 || len - q < 4 || (Math.floor(q) % 30 === 0)) R(sx, gyS + 2, u, bank, '#6a4a28');
-      } else if (Math.floor(wx) === c.g0 || Math.floor(wx) === c.g1 - 1) R(sx, gyS + 1, u, 3, '#9a7448');
+  // La hauteur du chemin, colonne fine par colonne fine: la pente monte par demi-points. Le sol n'est jamais plus bas
+  // que là où les bâtiments et les personnages sont posés (round(gy)): rien ne flotte, au pire ça s'enfonce d'un point fin.
+  // Au-dessus d'un ruisseau: NaN (ces colonnes-là sont dessinées à part, plus bas).
+  const eaux = lev.creeks.filter(k => k.x1 > cx && k.x0 < cx + W);
+  for (let n = 0; n < N; n++) {
+    const wx = n * u + cx, i0 = clamp(Math.floor(wx), 0, lev.L), i1 = Math.min(lev.L, i0 + 1);
+    let dansEau = false;
+    for (const k of eaux) if (wx >= k.x0 && wx < k.x1) { dansEau = true; break; }
+    ys[n] = dansEau ? NaN : Math.floor((lev.gy[i0] + (lev.gy[i1] - lev.gy[i0]) * clamp(wx - i0, 0, 1)) * K) / K - cy;
+  }
+  // Les grandes couches (terre, chemin): une seule forme par couche, qui suit le chemin en marches d'un point fin.
+  // « haut » absent: la couche descend jusqu'au bas de l'image.
+  const couche = (dy, haut, col) => {
+    g.fillStyle = col; g.beginPath();
+    for (let a = 0; a < N;) {
+      if (ys[a] !== ys[a]) { a++; continue; }
+      let b = a; while (b < N && ys[b] === ys[b]) b++;
+      g.moveTo(a * u, ys[a] + dy);
+      for (let i = a; i < b; i++) if (i + 1 === b || ys[i + 1] !== ys[i]) { g.lineTo((i + 1) * u, ys[i] + dy); if (i + 1 < b) g.lineTo((i + 1) * u, ys[i + 1] + dy); }
+      if (haut === undefined) { g.lineTo(b * u, H + 1); g.lineTo(a * u, H + 1); }
+      else for (let i = b - 1; i >= a; i--) if (i === a || ys[i - 1] !== ys[i]) { g.lineTo(i * u, ys[i] + dy + haut); if (i > a) g.lineTo(i * u, ys[i - 1] + dy + haut); else g.lineTo(a * u, ys[a] + dy + haut); }
+      g.closePath(); a = b;
     }
+    g.fill();
+  };
+  couche(5, undefined, pal.dirt); couche(5, 2, pal.dirtD); couche(34, undefined, pal.dirtD);
+  couche(0, 1, pal.roadL); couche(1, 4, pal.road);
+  for (let n = 0; n < N; n++) {
+    const sx = n * u, wx = sx + cx, gyS = ys[n];
+    if (gyS === gyS) {
+      // les grains: cailloux du chemin, mottes et pierres dans la terre, brins d'herbe au bord
+      const h = hsh(Math.round(wx * K) + 7919 * (n & 1));
+      if (h % 7 === 0) R(sx, gyS + 10 + ((h >>> 8) % 40) * u, u, u, pal.dirtDD);
+      if (h % 9 === 4) R(sx, gyS + 9 + ((h >>> 6) % 44) * u, u, 1, pal.dirtD);
+      if (h % 11 === 0) R(sx, gyS + 38 + ((h >>> 9) % 60) * u, u, u, pal.dirtDD);
+      if (h % 5 === 0) R(sx, gyS + 1 + ((h >>> 4) % 8) * u, u, u, pal.roadD);
+      if (h % 6 === 1) R(sx, gyS + 1 + ((h >>> 5) % 7) * u, u, u, pal.roadL);
+      if (h % 13 === 0) R(sx, gyS - ((h >>> 3) & 1 ? 1 : u), u, 1, pal.grass);
+      continue;
+    }
+    // un ruisseau: les berges, l'eau, le pont (ou son trou)
+    let c = null;
+    for (const k of eaux) if (wx >= k.x0 && wx < k.x1) { c = k; break; }
+    const i0 = clamp(Math.floor(wx), 0, lev.L), i1 = Math.min(lev.L, i0 + 1);
+    const yy = Math.floor((lev.gy[i0] + (lev.gy[i1] - lev.gy[i0]) * clamp(wx - i0, 0, 1)) * K) / K - cy;
+    const q = wx - c.x0, len = c.x1 - c.x0, bank = fi(Math.min(26, q * .9, (len - q) * .9));
+    R(sx, yy + bank, u, H, pal.dirt);
+    R(sx, yy + bank, u, 1, pal.grass);
+    if (bank > 16) {
+      R(sx, yy + 18, u, bank - 18 + 1, pal.water);
+      if ((wx + (G.t * 8 | 0)) % 9 < 2) R(sx, yy + 18, u, u, pal.waterL);
+    }
+    const deck = c.intact || !(wx >= c.g0 && wx < c.g1);
+    if (deck) {
+      R(sx, yy, u, 2, Math.round(wx * K) % (6 * K) === 0 ? '#5a3a1e' : '#9a7448');
+      if (q < 3 || len - q < 4 || (Math.floor(q) % 30 === 0)) R(sx, yy + 2, u, bank, '#6a4a28');
+    } else if (Math.floor(wx) === c.g0 || Math.floor(wx) === c.g1 - 1) R(sx, yy + 1, u, 3, '#9a7448');
   }
   for (const z of lev.zones) {
     if (z.x1 < cx || z.x0 > cx + W) continue;
@@ -4142,19 +4262,9 @@ let ZOOM_IMAGE = null, UI_UTILISE = false;
 let S = 2, touchMode = false, layout = { left: 0, top: 0, cw: W, ch: H };
 const $ = id => document.getElementById(id);
 
-// Porte une toile du jeu à l'écran. Quand l'écran n'est pas un multiple entier de l'image, grossir au plus proche
-// voisin donne des points inégaux (un de 2, un de 3): on grossit d'abord d'un nombre entier, net, puis l'écran
-// ajuste le reste en douceur. Les points restent carrés et réguliers.
-let preEcran = null;
-function versEcran(src, sx, sy, sw, sh) {
-  const r = out.width / sw, n = Math.floor(r + .02);
-  if (n < 1 || r - n < .04 || r >= 3.5) { octx.imageSmoothingEnabled = n < 1; octx.drawImage(src, sx, sy, sw, sh, 0, 0, out.width, out.height); octx.imageSmoothingEnabled = false; return; }
-  if (!preEcran) { const c = document.createElement('canvas'); preEcran = { c, x: c.getContext('2d') }; }
-  const pw = Math.round(sw * n), ph = Math.round(sh * n), p = preEcran;
-  if (p.c.width !== pw || p.c.height !== ph) { p.c.width = pw; p.c.height = ph; } else p.x.clearRect(0, 0, pw, ph);
-  p.x.imageSmoothingEnabled = false; p.x.drawImage(src, sx, sy, sw, sh, 0, 0, pw, ph);
-  octx.imageSmoothingEnabled = true; octx.drawImage(p.c, 0, 0, out.width, out.height); octx.imageSmoothingEnabled = false;
-}
+// Porte une toile du jeu à l'écran. L'image de l'écran est un multiple entier de celle du jeu (voir resize):
+// chaque point du jeu devient un carré net, tous de la même taille.
+function versEcran(src, sx, sy, sw, sh) { octx.drawImage(src, sx, sy, sw, sh, 0, 0, out.width, out.height); }
 
 function resize() {
   const vw = window.innerWidth, vh = window.innerHeight, portrait = vh > vw;
@@ -4167,7 +4277,10 @@ function resize() {
   const top = touchMode && portrait ? Math.max(40, Math.floor((availH - ch) / 2) + 30) : Math.floor((vh - ch) / 2);
   out.style.width = cw + 'px'; out.style.height = ch + 'px'; out.style.left = left + 'px'; out.style.top = top + 'px';
   const dpr = Math.min(window.devicePixelRatio || 1, 3);
-  out.width = Math.round(cw * dpr); out.height = Math.round(ch * dpr);
+  // L'image de l'écran est un multiple entier de l'image du jeu: des points nets et tous pareils. Quand l'écran
+  // n'est pas lui-même un multiple entier, c'est le navigateur qui ajuste, en douceur et sans coût pour le jeu.
+  const r = cw * dpr / (W * K), n = r - Math.floor(r) > .25 ? Math.ceil(r) : Math.max(1, Math.floor(r));
+  out.width = W * K * n; out.height = H * K * n; out.style.imageRendering = 'auto';
   S = out.width / W;
   octx.imageSmoothingEnabled = false;
   layout = { left, top, cw, ch };
