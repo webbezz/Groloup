@@ -2467,9 +2467,10 @@ function drawMaisonDidi(X, base, night) {
   for (let r = 0; r < 11; r++) { const inset = r * 1.7; rect(X - 20 + inset, top - 2 - r, 40 - inset * 2, 1, (r >> 1) % 2 ? roofD : roof); }
   rect(X - 21, top - 1, 42, 1, white);
   rect(X + 5, top - 16, 3, 5, '#d9d2bf'); rect(X + 4, top - 17, 5, 1, '#3a3a3c');
-  // à l'étage: la porte haute et étroite, et une fenêtre
-  rect(X - 5, top + 3, 5, 12, white); rect(X - 4, top + 4, 3, 4, night ? '#ffd860' : '#56646a'); rect(X - 6, top + 2, 7, 1, '#d2d3cc');
-  fenetre(X + 5, top + 4, 5, 6, night);
+  // à l'étage: deux fenêtres (pas de porte); dans le toit, une mini lucarne
+  fenetre(X - 9, top + 4, 5, 6, night); fenetre(X + 5, top + 4, 5, 6, night);
+  rect(X - 3, top - 8, 7, 5, wall); rect(X - 4, top - 9, 9, 1, roofD); rect(X - 4, top - 3, 9, 1, white);
+  rect(X - 1, top - 7, 3, 3, night ? '#ffd860' : '#9cc4dc');
   // au rez-de-chaussée: la petite fenêtre sous son auvent, la porte d'entrée sous son petit toit saumon, le perron de bois
   fenetre(X - 9, base - 12, 5, 6, night);
   rect(X - 13, base - 16, 13, 1, '#d6d3cb'); rect(X - 12, base - 15, 1, 9, '#55585a'); rect(X - 2, base - 15, 1, 9, '#55585a');
